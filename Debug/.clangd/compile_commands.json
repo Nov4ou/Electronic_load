@@ -1,0 +1,97 @@
+[
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/epwm\" -I\"/Applications/ti/solar/v1.2/float/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/adc/adc.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/epwm/epwm.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/key/key.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer/timer.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_Adc.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_CodeStartBranch.asm"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_CpuTimers.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_DefaultIsr.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_EPwm.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_GlobalVariableDefs.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_Gpio.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_I2C.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_PieCtrl.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_PieVect.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_Sci.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_Spi.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_SysCtrl.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/f2806x_libraries/F2806x_usDelay.asm"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/epwm\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/adc\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/key\" -I\"/Applications/ti/solar/v1.2/float/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/user/main.c"
+   }
+]
