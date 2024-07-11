@@ -19,6 +19,7 @@
 #define PI 3.14159265358979
 
 void InitPWM2();
+void InitPWM3();
 void InitPWM5();
 void InitPWM6();
 void InitPWM7();

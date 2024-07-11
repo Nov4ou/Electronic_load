@@ -69,6 +69,61 @@ void InitPWM2() {
   EDIS;
 }
 
+void InitPWM3() {
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
+  SysCtrlRegs.PCLKCR1.bit.EPWM3ENCLK = 1; // ePWM2
+  EDIS;
+
+  InitEPwm3Gpio();
+
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 0; // Stop all TB clock;
+  EDIS;
+
+  // Setup Sync
+  EPwm3Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_DISABLE; // Pass through
+  // A3low each timer to be sync'ed
+  EPwm3Regs.TBCTL.bit.PHSEN = TB_DISABLE;
+  EPwm3Regs.TBPHS.half.TBPHS = 0;
+  EPwm3Regs.TBCTR = 0x0000; // Clear counter
+  EPwm3Regs.TBPRD = PWM_TBPRD;
+  EPwm3Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
+  EPwm3Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
+  EPwm3Regs.TBCTL.bit.CLKDIV = TB_DIV1;
+
+  // Setup shadow register load on ZERO
+  EPwm3Regs.CMPCTL.bit.SHDWAMODE = CC_SHADOW;
+  EPwm3Regs.CMPCTL.bit.SHDWBMODE = CC_SHADOW;
+  EPwm3Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+  EPwm3Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+
+  // Set Compare values
+  EPwm3Regs.CMPA.half.CMPA = 0; // Set compare A value
+  EPwm3Regs.CMPB = 0;           // Set Compare B value
+
+  // Set actions
+  EPwm3Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM1A on Zero
+  EPwm3Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
+  EPwm3Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
+  EPwm3Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+
+  // Active Low PWMs - Setup Deadband
+  //    EPwm2Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
+  //    EPwm2Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+  //    EPwm2Regs.DBCTL.bit.IN_MODE = DBA_ALL;
+  //    EPwm2Regs.DBRED = 10;
+  //    EPwm2Regs.DBFED = 10;
+
+  EPwm3Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO; // Select INT on Zero event
+  EPwm3Regs.ETSEL.bit.INTEN = 1;            // Enable INT
+  EPwm3Regs.ETPS.bit.INTPRD = ET_1ST;       // Generate INT on 1st event
+
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1; // Start all the timers synced
+  EDIS;
+}
+
 void InitPWM7() {
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
@@ -113,8 +168,8 @@ void InitPWM7() {
   EPwm7Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
   EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
   EPwm7Regs.DBCTL.bit.IN_MODE = DBA_ALL;
-  EPwm7Regs.DBRED = 50;
-  EPwm7Regs.DBFED = 50;
+  EPwm7Regs.DBRED = 10;
+  EPwm7Regs.DBFED = 10;
 
   EPwm7Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO; // Select INT on Zero event
   EPwm7Regs.ETSEL.bit.INTEN = 1;            // Enable INT
@@ -202,28 +257,28 @@ __interrupt void epwm7_timer_isr(void) {
   //   index = 0;
   // }
 
-  if (flag == 1) {
-    EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
-                                               // Set actions
+  // if (flag == 1) {
+    // EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
+    //                                            // Set actions
 
-    // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-    // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+    // // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
+    // // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
 
-    if (ref_sinwave > 0) {
-      EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET; // Set PWM1A on Zero
-      EPwm8Regs.AQCTLA.bit.CAU = AQ_SET; // Clear PWM1A on event A, up count
-      sineValue1 = (Uint16)(ref_sinwave * MAX_CMPA);
-      EPwm7Regs.CMPA.half.CMPA = sineValue1;
-      EPwm8Regs.CMPA.half.CMPA = MAX_CMPA;
-    }
-    if (ref_sinwave <= 0) {
-      EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR; // Set PWM1A on Zero
-      EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
-      sineValue2 = (Uint16)(MAX_CMPA - (-1 * ref_sinwave * MAX_CMPA));
-      EPwm7Regs.CMPA.half.CMPA = sineValue2;
-      EPwm8Regs.CMPA.half.CMPA = 0;
-    }
-  }
+    // if (ref_sinwave > 0) {
+    //   EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET; // Set PWM1A on Zero
+    //   EPwm8Regs.AQCTLA.bit.CAU = AQ_SET; // Clear PWM1A on event A, up count
+    //   sineValue1 = (Uint16)(ref_sinwave * MAX_CMPA);
+    //   EPwm7Regs.CMPA.half.CMPA = sineValue1;
+    //   EPwm8Regs.CMPA.half.CMPA = MAX_CMPA;
+    // }
+    // if (ref_sinwave <= 0) {
+    //   EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR; // Set PWM1A on Zero
+    //   EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
+    //   sineValue2 = (Uint16)(MAX_CMPA - (-1 * ref_sinwave * MAX_CMPA));
+    //   EPwm7Regs.CMPA.half.CMPA = sineValue2;
+    //   EPwm8Regs.CMPA.half.CMPA = 0;
+    // }
+  // }
 
   //
   // Clear INT flag for this timer

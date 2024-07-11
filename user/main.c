@@ -17,24 +17,35 @@
 
 #define Kp 22.7089
 #define Ki 1063.14
-#define GRID_VPP 7
+#define GRID_VPP 20
 #define ISR_FREQUENCY 10100
 _Bool flag = 0;
+float ratio = 0;
 
 #define THETA_GRAPH_INDEX 100
+#define GRID_CURRENT_INDEX 150
 float theta_graph[THETA_GRAPH_INDEX];
+float grid_current_graph[GRID_CURRENT_INDEX];
 Uint16 theta_index;
+Uint16 current_index;
 float power_factor = PI / 3.0;
 float rectifier_theta;
+
+float ref_current = 1.0;
+float sineValue;
+float error;
 
 float GRID_FREQ = 50;
 extern float Vol1;
 extern float Vol2;
 float normalized_voltage;
 float grid_voltage;
+float grid_current;
 
 float ref_sinwave;
+Uint16 dutySin;
 float dutyCycle;
+float dutyCycle2;
 
 SPLL_1ph_SOGI_F spll1;
 
@@ -75,6 +86,7 @@ int main() {
   ADC_Init();
   LED_Init();
   InitPWM2();
+  InitPWM3();
   InitPWM7();
   InitPWM8();
   KEY_Init();
@@ -101,32 +113,33 @@ int main() {
   while (1) {
 
     GpioDataRegs.GPBSET.bit.GPIO43 = 1;
-    if (KEY_Read() != 0) {
-      DELAY_US(20000);
-      if (KEY_Read() == 2)
-        flag = 1 - flag;
-      while (KEY_Read() != 0)
-        ;
-    }
-    if (flag == 0) {
-      EALLOW;
-      // SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 0; // ePWM7
-      // SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 0; // ePWM8
-      // SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 1; // ePWM7
-      // SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 1; // ePWM8
-      // EDIS;
-      EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up and count down
-                                                     // Set actions test
-      EPwm6Regs.AQCTLA.bit.ZRO = AQ_SET;            // Set PWM1A on Zero
-      EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;   // Clear PWM1A on event A, up count
-      EPwm8Regs.AQCTLA.bit.CAD = AQ_SET; // Clear PWM on down count
-      // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-      // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
-      // EALLOW;
-      EPwm7Regs.CMPA.half.CMPA = MAX_CMPA / 2;
-      EPwm8Regs.CMPA.half.CMPA = MAX_CMPA / 2;
-      EDIS;
-    }
+    // if (KEY_Read() != 0) {
+    //   DELAY_US(20000);
+    //   if (KEY_Read() == 2)
+    //     flag = 1 - flag;
+    //   while (KEY_Read() != 0)
+    //     ;
+    // }
+    // if (flag == 0) {
+    //   EALLOW;
+    //   // SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 0; // ePWM7
+    //   // SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 0; // ePWM8
+    //   // SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 1; // ePWM7
+    //   // SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 1; // ePWM8
+    //   // EDIS;
+    //   EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up and
+    //   countdown
+    //                                                  // Set actions test
+    //   EPwm6Regs.AQCTLA.bit.ZRO = AQ_SET;             // Set PWM1A on Zero
+    //   EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up
+    //   EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;   // Clear PWM on down count
+    //   // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
+    //   // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up
+    //   // count EALLOW;
+    //   EPwm7Regs.CMPA.half.CMPA = MAX_CMPA / 2;
+    //   EPwm8Regs.CMPA.half.CMPA = MAX_CMPA / 2;
+    //   EDIS;
+    // }
   }
 }
 
@@ -140,21 +153,64 @@ interrupt void TIM0_IRQn(void) {
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll1);
 
-  GRID_FREQ = spll1.fo;
-  rectifier_theta = spll1.theta[0];
-  // rectifier_theta = spll1.theta[0];
-  // rectifier_theta = spll1.theta[0];
-  // if (rectifier_theta > (2 * PI))
-  //   rectifier_theta = (2 * PI) - rectifier_theta;
-  dutyCycle = (sin(rectifier_theta) + 1.0) / 2.0 * MAX_CMPA;
+  // GRID_FREQ = spll1.fo;
+  rectifier_theta = spll1.theta[0] + PI * ratio;
 
-  ref_sinwave = sin(rectifier_theta);
-  theta_graph[theta_index++] = rectifier_theta;
-  if (theta_index >= THETA_GRAPH_INDEX)
-    theta_index = 0;
+  // // OPEN LOOP
+  // dutyCycle = (sin(rectifier_theta) + 1.0) / 2.0 * MAX_CMPA;
+
+  // ref_sinwave = sin(rectifier_theta);
+  // theta_graph[theta_index++] = rectifier_theta;
+  // if (theta_index >= THETA_GRAPH_INDEX)
+  //   theta_index = 0;
+  // EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
+  // // OPEN LOOP
+
+  grid_current_graph[current_index++] = grid_current;
+  if (current_index >= GRID_CURRENT_INDEX)
+    current_index = 0;
+
+  // /* CLOSE LOOP
+  ref_current = sin(rectifier_theta) * 3 * 1.4142136;        // -1 < current < 1
+  dutyCycle = (sin(rectifier_theta) + 1.0) / 2.0 * MAX_CMPA; // For EPWM2
   EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
-  // EPwm7Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
-  // EPwm7Regs.CMPA.half.CMPA = 2250;
+  dutyCycle2 = (sin(spll1.theta[0]) + 1.0) / 2.0 * MAX_CMPA;
+  EPwm3Regs.CMPA.half.CMPA = (Uint16)dutyCycle2;
+
+  error = ref_current - grid_current;
+  sineValue = error * 900;
+  if (sineValue > MAX_CMPA)
+    sineValue = MAX_CMPA;
+  if (sineValue > MAX_CMPA)
+    sineValue = MAX_CMPA;
+  if (sineValue < (-1 * MAX_CMPA))
+    sineValue = (-1 * MAX_CMPA);
+  
+  // dutySin = sineValue;
+
+    // if (flag == 1) {
+    EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
+  if (error > 0) {
+    EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
+    EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
+
+    EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET; // Set PWM1A on Zero
+    EPwm8Regs.AQCTLA.bit.CAU = AQ_SET; // Clear PWM1A on event A, up count
+    // EPwm8Regs.AQCTLA.bit.CAD = AQ_CLEAR;
+    EPwm7Regs.CMPA.half.CMPA = (Uint16) sineValue;
+    EPwm8Regs.CMPA.half.CMPA = MAX_CMPA;
+  }
+  if (error <= 0) {
+    EPwm7Regs.AQCTLA.bit.CAU = AQ_SET; // Set PWM1A on Zero
+    EPwm7Regs.AQCTLA.bit.CAD = AQ_CLEAR; // Clear PWM1A on event A, up count
+
+    EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR; // Set PWM1A on Zero
+    EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
+    EPwm7Regs.CMPA.half.CMPA = (Uint16) (-1 * sineValue);
+    EPwm8Regs.CMPA.half.CMPA = 0;
+  }
+  // }
+  // CLOSE LOOP */
 
   PieCtrlRegs.PIEACK.bit.ACK1 = 1;
   EDIS;

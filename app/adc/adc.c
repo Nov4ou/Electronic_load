@@ -14,6 +14,7 @@ Uint8 index = 0;
 float Vol1 = 0;
 float Vol2 = 0;
 extern float grid_voltage;
+extern float grid_current;
 float grid_vol_graph[GRID_V_INDEX];
 Uint16 gridvindex;
 
@@ -87,6 +88,9 @@ __interrupt void adc_isr(void) {
 
   grid_voltage = (Vol2 - 1.493) * 34.013;
   grid_vol_graph[gridvindex++] = grid_voltage;
+
+  grid_current = (Vol1 - 1.510) * 39.87 / 20;
+
   if (gridvindex > GRID_V_INDEX)
     gridvindex = 0;
 
