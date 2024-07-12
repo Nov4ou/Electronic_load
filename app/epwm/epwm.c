@@ -157,12 +157,17 @@ void InitPWM7() {
   EPwm7Regs.CMPA.half.CMPA = MAX_CMPA / 2; // Set compare A value
   EPwm7Regs.CMPB = MAX_CMPA / 2;           // Set Compare B value
 
-  // Set actions
-  // EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;            // Set PWM1A on Zero
-  EPwm7Regs.AQCTLA.bit.CAU = AQ_SET;   // Clear PWM1A on event A, up count
-  EPwm7Regs.AQCTLA.bit.CAD = AQ_CLEAR; // Clear PWM on down count
-  // EPwm7Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  // EPwm7Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+  // // Set actions
+  // // EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;            // Set PWM1A on Zero
+  // EPwm7Regs.AQCTLA.bit.CAU = AQ_SET;   // Clear PWM1A on event A, up count
+  // EPwm7Regs.AQCTLA.bit.CAD = AQ_CLEAR; // Clear PWM on down count
+  // // EPwm7Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
+  // // EPwm7Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+
+  // Set actions for rectifier
+  EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
+  EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
+  EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
 
   // Active Low PWMs - Setup Deadband
   EPwm7Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
@@ -216,18 +221,16 @@ void InitPWM8() {
   EPwm8Regs.CMPA.half.CMPA = MAX_CMPA / 2; // Set compare A value
   EPwm8Regs.CMPB = MAX_CMPA / 2;           // Set Compare B value
 
-  // Set actions
-  EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM1A on Zero
-  EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
-  EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
-
-  // // Set actions test
-  // // EPwm6Regs.AQCTLA.bit.ZRO = AQ_SET;            // Set PWM1A on Zero
-  // EPwm8Regs.AQCTLA.bit.CAU = AQ_SET;   // Clear PWM1A on event A, up count
-  // EPwm8Regs.AQCTLA.bit.CAD = AQ_CLEAR; // Clear PWM on down count
+  // // Set actions
+  // EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM1A on Zero
+  // EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
   // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
   // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+
+  // Set actions for rectifier
+  EPwm8Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
+  EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;
+  EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;
 
   // Active Low PWMs - Setup Deadband
   EPwm8Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
@@ -258,26 +261,26 @@ __interrupt void epwm7_timer_isr(void) {
   // }
 
   // if (flag == 1) {
-    // EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
-    //                                            // Set actions
+  // EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
+  //                                            // Set actions
 
-    // // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-    // // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+  // // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
+  // // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
 
-    // if (ref_sinwave > 0) {
-    //   EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET; // Set PWM1A on Zero
-    //   EPwm8Regs.AQCTLA.bit.CAU = AQ_SET; // Clear PWM1A on event A, up count
-    //   sineValue1 = (Uint16)(ref_sinwave * MAX_CMPA);
-    //   EPwm7Regs.CMPA.half.CMPA = sineValue1;
-    //   EPwm8Regs.CMPA.half.CMPA = MAX_CMPA;
-    // }
-    // if (ref_sinwave <= 0) {
-    //   EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR; // Set PWM1A on Zero
-    //   EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
-    //   sineValue2 = (Uint16)(MAX_CMPA - (-1 * ref_sinwave * MAX_CMPA));
-    //   EPwm7Regs.CMPA.half.CMPA = sineValue2;
-    //   EPwm8Regs.CMPA.half.CMPA = 0;
-    // }
+  // if (ref_sinwave > 0) {
+  //   EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET; // Set PWM1A on Zero
+  //   EPwm8Regs.AQCTLA.bit.CAU = AQ_SET; // Clear PWM1A on event A, up count
+  //   sineValue1 = (Uint16)(ref_sinwave * MAX_CMPA);
+  //   EPwm7Regs.CMPA.half.CMPA = sineValue1;
+  //   EPwm8Regs.CMPA.half.CMPA = MAX_CMPA;
+  // }
+  // if (ref_sinwave <= 0) {
+  //   EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR; // Set PWM1A on Zero
+  //   EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
+  //   sineValue2 = (Uint16)(MAX_CMPA - (-1 * ref_sinwave * MAX_CMPA));
+  //   EPwm7Regs.CMPA.half.CMPA = sineValue2;
+  //   EPwm8Regs.CMPA.half.CMPA = 0;
+  // }
   // }
 
   //

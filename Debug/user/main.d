@@ -25,9 +25,9 @@ user/main.obj: /Users/nov4ou/workspace_v12/f2806x/headers/include/F2806x_Sci.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/headers/include/F2806x_SysCtrl.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/headers/include/F2806x_Usb.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/headers/include/F2806x_XIntrupt.h
+user/main.obj: /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_EPwm_defines.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_Examples.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_GlobalPrototypes.h
-user/main.obj: /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_EPwm_defines.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_I2c_defines.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_Dma_defines.h
 user/main.obj: /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_Cla_defines.h
@@ -121,11 +121,11 @@ user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer/ti
 
 /Users/nov4ou/workspace_v12/f2806x/headers/include/F2806x_XIntrupt.h:
 
+/Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_EPwm_defines.h:
+
 /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_Examples.h:
 
 /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_GlobalPrototypes.h:
-
-/Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_EPwm_defines.h:
 
 /Users/nov4ou/workspace_v12/f2806x/common/include/F2806x_I2c_defines.h:
 

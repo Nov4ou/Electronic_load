@@ -3,19 +3,25 @@
 #include "epwm.h"
 
 #define GRID_V_INDEX 100
+#define RECTIFIER_CURR_INDEX 150
 
 Uint16 LoopCount;
 Uint16 ConversionCount;
 Uint16 Voltage1[10];
 Uint16 Voltage2[10];
+Uint16 Voltage3[10];
 
 Uint8 index = 0;
 
 float Vol1 = 0;
 float Vol2 = 0;
+float Vol3 = 0;
 extern float grid_voltage;
 extern float grid_current;
+float rectifier_voltage;
 float grid_vol_graph[GRID_V_INDEX];
+float rectifier_volt_graph[RECTIFIER_CURR_INDEX];
+Uint16 rectifier_volt_index;
 Uint16 gridvindex;
 
 void ADC_Init() {
@@ -38,9 +44,12 @@ void ADC_Init() {
   //
   AdcRegs.INTSEL1N2.bit.INT1SEL = 1;
 
-  AdcRegs.ADCSOC0CTL.bit.CHSEL = 0xA; // set SOC0 channel select to ADCINA3
-  AdcRegs.ADCSOC1CTL.bit.CHSEL = 3;   // set SOC1 channel select to ADCINA2
-
+  AdcRegs.ADCSOC0CTL.bit.CHSEL =
+      5; // set SOC0 channel select to ADCINA3     Bus Voltage
+  AdcRegs.ADCSOC1CTL.bit.CHSEL =
+      3; // set SOC1 channel select to ADCINA2     Grid Voltage
+  AdcRegs.ADCSOC2CTL.bit.CHSEL =
+      0xA; // set SOC1 channel select to ADCINA2   Grid Current
   //
   // set SOC0 start trigger on EPWM1A, due to round-robin SOC0 converts
   // first then SOC1
@@ -52,6 +61,12 @@ void ADC_Init() {
   // first then SOC1
   //
   AdcRegs.ADCSOC1CTL.bit.TRIGSEL = 5;
+
+  //
+  // set SOC2 start trigger on EPWM1A, due to round-robin SOC0 converts
+  // first then SOC1
+  //
+  AdcRegs.ADCSOC2CTL.bit.TRIGSEL = 5;
 
   //
   // set SOC0 S/H Window to 7 ADC Clock Cycles, (6 ACQPS plus 1)
@@ -82,14 +97,21 @@ void ADC_Init() {
 __interrupt void adc_isr(void) {
   Voltage1[ConversionCount] = AdcResult.ADCRESULT0;
   Voltage2[ConversionCount] = AdcResult.ADCRESULT1;
+  Voltage3[ConversionCount] = AdcResult.ADCRESULT2;
 
   Vol1 = Voltage1[ConversionCount] * 3.3 / 4095;
   Vol2 = Voltage2[ConversionCount] * 3.3 / 4095;
+  Vol3 = Voltage3[ConversionCount] * 3.3 / 4095;
+
+  rectifier_voltage = (Vol1 - 1.502) * 41.61;
+  rectifier_volt_graph[rectifier_volt_index++] = rectifier_voltage;
+  if (rectifier_volt_index > GRID_V_INDEX)
+    rectifier_volt_index = 0;
 
   grid_voltage = (Vol2 - 1.493) * 34.013;
   grid_vol_graph[gridvindex++] = grid_voltage;
 
-  grid_current = (Vol1 - 1.510) * 39.87 / 20;
+  grid_current = (Vol3 - 1.510) * 39.87 / 20;
 
   if (gridvindex > GRID_V_INDEX)
     gridvindex = 0;
