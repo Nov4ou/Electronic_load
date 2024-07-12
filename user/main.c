@@ -19,6 +19,8 @@
 #define Ki 1063.14
 #define GRID_VPP 20
 #define ISR_FREQUENCY 10100
+
+#define CURRENT_PEAK 3
 _Bool flag = 0;
 float ratio = 0;
 
@@ -112,34 +114,8 @@ int main() {
 
   while (1) {
 
-    GpioDataRegs.GPBSET.bit.GPIO43 = 1;
-    // if (KEY_Read() != 0) {
-    //   DELAY_US(20000);
-    //   if (KEY_Read() == 2)
-    //     flag = 1 - flag;
-    //   while (KEY_Read() != 0)
-    //     ;
-    // }
-    // if (flag == 0) {
-    //   EALLOW;
-    //   // SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 0; // ePWM7
-    //   // SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 0; // ePWM8
-    //   // SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 1; // ePWM7
-    //   // SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 1; // ePWM8
-    //   // EDIS;
-    //   EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up and
-    //   countdown
-    //                                                  // Set actions test
-    //   EPwm6Regs.AQCTLA.bit.ZRO = AQ_SET;             // Set PWM1A on Zero
-    //   EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up
-    //   EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;   // Clear PWM on down count
-    //   // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-    //   // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up
-    //   // count EALLOW;
-    //   EPwm7Regs.CMPA.half.CMPA = MAX_CMPA / 2;
-    //   EPwm8Regs.CMPA.half.CMPA = MAX_CMPA / 2;
-    //   EDIS;
-    // }
+    // GpioDataRegs.GPBSET.bit.GPIO43 = 1;
+
   }
 }
 
@@ -166,9 +142,21 @@ interrupt void TIM0_IRQn(void) {
   // EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
   // // OPEN LOOP
 
-  grid_current_graph[current_index++] = grid_current;
-  if (current_index >= GRID_CURRENT_INDEX)
-    current_index = 0;
+
+  
+  // if (power_factor < 0)
+  //   power_factor = 0;
+  // if (power_factor > 0.5)
+  //   power_factor = 0.5;
+
+    
+  // ref_current = (power_factor * sin(spll1.theta[0]) + sqrt(1 - power_factor * power_factor) * cos(spll1.theta[0]) * 1) * CURRENT_PEAK * 1.4142136;
+
+  // grid_current_graph[current_index++] = ref_current;
+  // if (current_index >= GRID_CURRENT_INDEX)
+  //   current_index = 0;
+
+
 
   // /* CLOSE LOOP
   ref_current = sin(rectifier_theta) * 3 * 1.4142136;        // -1 < current < 1
