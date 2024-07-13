@@ -88,6 +88,7 @@
                                 <listOptionValue value="${CG_TOOL_ROOT}/include"/>
                                 <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/epwm"/>
                                 <listOptionValue value="/Applications/ti/solar/v1.2/float/include"/>
+                                <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/adc"/>
                             </option>
                         </tool>
                     </fileInfo>
