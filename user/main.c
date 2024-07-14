@@ -17,12 +17,12 @@
 #include "math.h"
 #include "timer.h"
 
-#pragma CODE_SECTION(TIM0_IRQn, "ramfuncs");
+//#pragma CODE_SECTION(TIM0_IRQn, "ramfuncs");
 
-extern Uint16 RamfuncsLoadStart;
-extern Uint16 RamfuncsLoadEnd;
-extern Uint16 RamfuncsRunStart;
-extern Uint16 RamfuncsLoadSize;
+//extern Uint16 RamfuncsLoadStart;
+//extern Uint16 RamfuncsLoadEnd;
+//extern Uint16 RamfuncsRunStart;
+//extern Uint16 RamfuncsLoadSize;
 
 // #define Kp 22.7089
 #define Kp 25.7089
@@ -239,7 +239,7 @@ interrupt void TIM0_IRQn(void) {
   if (general_index >= GERERNAL_GRAPH_INDEX)
     general_index = 0;
   output = (error * Kp_set + V_in_feedback * 30) /
-           V_dc_feedback / 3; // A sine wave, should between -1 and 1
+           V_dc_feedback; // A sine wave, should between -1 and 1
 
   // Test rectifier
   // output = sin(spll1.theta[0]) * ratio;
