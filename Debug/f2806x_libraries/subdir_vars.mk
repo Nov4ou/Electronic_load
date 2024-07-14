@@ -4,7 +4,6 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CMD_SRCS += \
-../f2806x_libraries/28069_RAM_lnk.cmd \
 ../f2806x_libraries/F2806x_Headers_nonBIOS.cmd 
 
 ASM_SRCS += \

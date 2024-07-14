@@ -17,6 +17,14 @@
 #include "math.h"
 #include "timer.h"
 
+#pragma CODE_SECTION(TIM0_IRQn, "ramfuncs");
+
+
+extern Uint16 RamfuncsLoadStart;
+extern Uint16 RamfuncsLoadEnd;
+extern Uint16 RamfuncsRunStart;
+extern Uint16 RamfuncsLoadSize;
+
 // #define Kp 22.7089
 #define Kp 25.7089
 // #define Ki 1063.14
@@ -26,7 +34,7 @@
 
 float CURRENT_PEAK = 0.7;
 _Bool flag = 0;
-float ratio = 0;
+float ratio = 1;
 
 #define GERERNAL_GRAPH_INDEX 150
 float general_graph[GERERNAL_GRAPH_INDEX];
@@ -41,7 +49,7 @@ Uint16 theta_index;
 Uint16 output_index;
 
 Uint16 compare1, compare2;
-float Kp_set = -11.0;
+float Kp_set = -8.0;
 float V_dc_feedback = 0;
 float V_in_feedback = 0;
 
@@ -81,6 +89,8 @@ void LED_Init(void) {
 }
 
 int main() {
+  // memcpy(&RamfuncsRunStart, &RamfuncsLoadStart, (Uint32)&RamfuncsLoadSize);
+  // InitFlash();
   InitSysCtrl();
   DINT;
   InitPieCtrl();
@@ -135,7 +145,7 @@ int main() {
     if (KEY_Read() != 0) {
       if (KEY_Read() == 1) {
         flag = 1 - flag;
-        while (KEY_Read() == 2)
+        while (KEY_Read() == 1)
           ;
       }
     }
@@ -172,7 +182,7 @@ interrupt void TIM0_IRQn(void) {
   EALLOW;
 
   GpioDataRegs.GPATOGGLE.bit.GPIO0 = 1;
-  normalized_voltage = grid_voltage / 30;
+  normalized_voltage = grid_voltage / 20;
   spll1.u[0] = normalized_voltage;
   SPLL_1ph_SOGI_F_FUNC(&spll1);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
@@ -184,7 +194,7 @@ interrupt void TIM0_IRQn(void) {
   //     CURRENT_PEAK * 1.4142136;
 
   ref_current =
-      (power_factor * sin(spll1.theta[0]) * 1) * CURRENT_PEAK * 1.4142136;
+      (power_factor * sin(spll1.theta[0])) * CURRENT_PEAK * 1.4142136;
 
   if (flag == 1) {
     // if (current_soft_start > 1)
@@ -217,20 +227,14 @@ interrupt void TIM0_IRQn(void) {
     general_index = 0;
   output = (error * Kp_set + V_in_feedback * 30) /
            V_dc_feedback; // A sine wave, should between -1 and 1
-  output = -1 * output;
+
+  // Test rectifier
+  // output = sin(spll1.theta[0]) * ratio;
 
   output_graph[output_index++] = output;
   if (output_index > OUTPUT_GRAPH_INDEX)
     output_index = 0;
 
-  // // Test
-  // flag = 1;
-  // output = sin(spll1.theta[0]) + 0.5 * sin(5 * spll1.theta[0]);
-
-  // if (output < -1)
-  //   output = -1;
-  // if (output > 1)
-  //   output = 1;
   if (flag == 1) {
     EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
@@ -268,7 +272,7 @@ interrupt void TIM0_IRQn(void) {
 
   // Check SOGI
   // dutyCycle2 = (sin(spll1.theta[0]) + 1.0) / 2.0 * MAX_CMPA;
-  dutyCycle2 = output * MAX_CMPA / 2+ 2000;
+  dutyCycle2 = output * MAX_CMPA / 2 + 2500;
   // dutyCycle2 = ref_current * MAX_CMPA / 2 + 2000;
   // dutyCycle2 = grid_voltage / 20 * MAX_CMPA;
   EPwm3Regs.CMPA.half.CMPA = (Uint16)dutyCycle2;

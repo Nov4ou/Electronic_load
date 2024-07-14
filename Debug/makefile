@@ -27,7 +27,7 @@ ORDERED_OBJS += \
 "./f2806x_libraries/F2806x_SysCtrl.obj" \
 "./f2806x_libraries/F2806x_usDelay.obj" \
 "./user/main.obj" \
-"../f2806x_libraries/28069_RAM_lnk.cmd" \
+"../28069_RAM_lnk.cmd" \
 "../f2806x_libraries/F2806x_Headers_nonBIOS.cmd" \
 $(GEN_CMDS__FLAG) \
 -llibc.a \
@@ -40,12 +40,14 @@ RMDIR := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include subdir_vars.mk
 -include app/adc/subdir_vars.mk
 -include app/epwm/subdir_vars.mk
 -include app/key/subdir_vars.mk
 -include app/timer/subdir_vars.mk
 -include f2806x_libraries/subdir_vars.mk
 -include user/subdir_vars.mk
+-include subdir_rules.mk
 -include app/adc/subdir_rules.mk
 -include app/epwm/subdir_rules.mk
 -include app/key/subdir_rules.mk
