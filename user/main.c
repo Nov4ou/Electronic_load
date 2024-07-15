@@ -68,7 +68,7 @@ float error_before = 0;
 float Ii_circle_p = 0;
 float output = 0;
 float output1 = 0;
-float output2;
+float output2 = 0.5;
 float V_mod2;
 
 float GRID_FREQ = 50;
@@ -198,56 +198,36 @@ int main() {
         while (KEY_Read() == 3)
           ;
       }
+      if (KEY_Read() == 6) {
+        flag_rectifier = 1 - flag_rectifier;
+        flag_inverter = 1 - flag_inverter;
+      }
     }
 
     if (flag_rectifier == 0) {
       current_soft_start = 0;
       EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HI;
       EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HI;
-      if (sin(spll1.theta[0]) > 0) {
-        // Set actions for rectifier
-        EPwm7Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-        // Set actions for rectifier
-        EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-      }
-      if (sin(spll1.theta[0] + PI / 6.0) < 0) {
-        // Set actions for rectifier
-        EPwm7Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-        // Set actions for rectifier
-        EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-      }
+      // Set actions for rectifier
+      EPwm7Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
+      EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+      EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
+      // Set actions for rectifier
+      EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
+      EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+      EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
     }
     if (flag_inverter == 0) {
       EPwm5Regs.DBCTL.bit.POLSEL = DB_ACTV_HI;
       EPwm6Regs.DBCTL.bit.POLSEL = DB_ACTV_HI;
-      if (sin(spll1.theta[0]) > 0) {
-        // Set actions for rectifier
-        EPwm5Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm5Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm5Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-        // Set actions for rectifier
-        EPwm6Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm6Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm6Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-      }
-      if (sin(spll1.theta[0]) < 0) {
-        // Set actions for rectifier
-        EPwm5Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm5Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm5Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-        // Set actions for rectifier
-        EPwm6Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm6Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm6Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-      }
+      // Set actions for rectifier
+      EPwm5Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
+      EPwm5Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+      EPwm5Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
+      // Set actions for rectifier
+      EPwm6Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
+      EPwm6Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+      EPwm6Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
     }
   }
 }
@@ -276,7 +256,7 @@ interrupt void TIM0_IRQn(void) {
          sqrt(1 - power_factor * power_factor) * cos(spll1.theta[0]) * K_RLC) *
         CURRENT_PEAK * 1.4142136;
   }
-  if (flag_inverter == 1){
+  if (flag_inverter == 1) {
     // Soft Start: Set reference current increase gradually
   }
 
@@ -299,13 +279,13 @@ interrupt void TIM0_IRQn(void) {
 
   /********************* Inverter Current Loop **************************/
   PID_Calc(&Inverter_current_loop, V_DC_REFERENCE, rectifier_voltage);
-  output2 = Inverter_current_loop.output;
+  output2 += Inverter_current_loop.output;
   if (output2 < 0)
     output2 = 0;
   if (output2 > 1)
     output2 = 1;
-  // V_mod2 = output2 * sin(spll1.theta[0]); // Modulation waveform
-  V_mod2 = sin(spll1.theta[0]) * ratio;
+  V_mod2 = output2 * sin(spll1.theta[0]); // Modulation waveform
+  // V_mod2 = sin(spll1.theta[0]) * ratio;
   /********************* Inverter Current Loop **************************/
 
   if (flag_rectifier == 1) {
