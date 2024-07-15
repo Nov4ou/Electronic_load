@@ -131,7 +131,7 @@ __interrupt void adc_isr(void) {
   grid_voltage = Voltage2[ConversionCount] * 0.0272 - 50.498;
   grid_vol_graph[gridvindex++] = grid_voltage;
 
-  grid_current = (Voltage3[ConversionCount] * 0.0016 - 2.9816) / 2;
+  grid_current = (Voltage3[ConversionCount] * 0.0016 - 2.9816) * 2;
   // grid_current = (Vol3 - 1.509) * 39.518 / 10;
   //grid_current = (Vol3 - 1.509) * 39.518 / 20;
   // filtered_current = kalman_filter(&filtered_vol3, Vol3);
