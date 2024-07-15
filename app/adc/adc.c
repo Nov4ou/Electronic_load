@@ -37,12 +37,12 @@ typedef struct {
 } KalmanFilter;
 KalmanFilter filtered_vol3;
 
-// void kalmanFilter_Init(KalmanFilter *kf);
-// float kalman_filter(KalmanFilter *kf, float z);
+void kalmanFilter_Init(KalmanFilter *kf);
+float kalman_filter(KalmanFilter *kf, float z);
 
 void ADC_Init() {
 
-  // kalmanFilter_Init(&filtered_vol3);
+  kalmanFilter_Init(&filtered_vol3);
   //
   // Configure ADC
   //
@@ -120,16 +120,19 @@ __interrupt void adc_isr(void) {
   Vol1 = Voltage1[ConversionCount] * 3.3 / 4095;
   Vol2 = Voltage2[ConversionCount] * 3.3 / 4095;
   Vol3 = Voltage3[ConversionCount] * 3.3 / 4095;
+  // filtered_current = kalman_filter(&filtered_vol3, Voltage3[ConversionCount]);
+
 
   rectifier_voltage = (Vol1 - 1.502) * 41.61;
   rectifier_volt_graph[rectifier_volt_index++] = rectifier_voltage;
   if (rectifier_volt_index > GRID_V_INDEX)
     rectifier_volt_index = 0;
 
-  grid_voltage = (Vol2 - 1.493) * 34.013;
+  grid_voltage = Voltage2[ConversionCount] * 0.0272 - 50.498;
   grid_vol_graph[gridvindex++] = grid_voltage;
 
-  grid_current = (Vol3 - 1.509) * 39.518 / 10;
+  grid_current = Voltage3[ConversionCount] * 0.0016 - 2.9816;
+  // grid_current = (Vol3 - 1.509) * 39.518 / 10;
   //grid_current = (Vol3 - 1.509) * 39.518 / 20;
   // filtered_current = kalman_filter(&filtered_vol3, Vol3);
 
@@ -160,23 +163,23 @@ __interrupt void adc_isr(void) {
   return;
 }
 
-// void kalmanFilter_Init(KalmanFilter *kf) {
-//   // Initialize Kalman Filter
-//   kf->x_est = 0;  // Initial estimate of state value
-//   kf->P_est = 1;  // Initial estimate of state covariance
-//   kf->Q = 0.0001; // Process noise covariance
-//   kf->R = 0.01;   // Measurement noise covariance
-// }
+void kalmanFilter_Init(KalmanFilter *kf) {
+  // Initialize Kalman Filter
+  kf->x_est = 0;  // Initial estimate of state value
+  kf->P_est = 1;  // Initial estimate of state covariance
+  kf->Q = 0.0001; // Process noise covariance
+  kf->R = 0.01;   // Measurement noise covariance
+}
 
-// float kalman_filter(KalmanFilter *kf, float z) {
-//   // Prediction step
-//   float x_pred = kf->x_est;
-//   float P_pred = kf->P_est + kf->Q;
+float kalman_filter(KalmanFilter *kf, float z) {
+  // Prediction step
+  float x_pred = kf->x_est;
+  float P_pred = kf->P_est + kf->Q;
 
-//   // Update step
-//   float K = P_pred / (P_pred + kf->R);
-//   kf->x_est = x_pred + K * (z - x_pred);
-//   kf->P_est = (1 - K) * P_pred;
+  // Update step
+  float K = P_pred / (P_pred + kf->R);
+  kf->x_est = x_pred + K * (z - x_pred);
+  kf->P_est = (1 - K) * P_pred;
 
-//   return kf->x_est;
-// }
+  return kf->x_est;
+}

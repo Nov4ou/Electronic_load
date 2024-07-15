@@ -17,12 +17,12 @@
 #include "math.h"
 #include "timer.h"
 
-//#pragma CODE_SECTION(TIM0_IRQn, "ramfuncs");
+// #pragma CODE_SECTION(TIM0_IRQn, "ramfuncs");
 
-//extern Uint16 RamfuncsLoadStart;
-//extern Uint16 RamfuncsLoadEnd;
-//extern Uint16 RamfuncsRunStart;
-//extern Uint16 RamfuncsLoadSize;
+// extern Uint16 RamfuncsLoadStart;
+// extern Uint16 RamfuncsLoadEnd;
+// extern Uint16 RamfuncsRunStart;
+// extern Uint16 RamfuncsLoadSize;
 
 // #define Kp 22.7089
 #define Kp 25.7089
@@ -32,8 +32,9 @@
 #define ISR_FREQUENCY 20000
 
 Uint8 scope_mode;
-float CURRENT_PEAK = 0.7;
-_Bool flag = 0;
+float CURRENT_PEAK = 1;
+Uint8 flag = 0;
+Uint8 K_RLC = 1;
 float ratio = 0;
 
 #define GERERNAL_GRAPH_INDEX 150
@@ -42,14 +43,14 @@ Uint16 general_index;
 
 #define THETA_GRAPH_INDEX 100
 #define RECTIFIER_CURR_INDEX 150
-#define OUTPUT_GRAPH_INDEX 500
+#define OUTPUT_GRAPH_INDEX 150
 float theta_graph[THETA_GRAPH_INDEX];
 float output_graph[OUTPUT_GRAPH_INDEX];
 Uint16 theta_index;
 Uint16 output_index;
 
 Uint16 compare1, compare2;
-float Kp_set = -8.0;
+float Kp_set = -5.0;
 float V_dc_feedback = 0;
 float V_in_feedback = 0;
 
@@ -60,7 +61,10 @@ float ref_current;
 float current_soft_start = 0.0;
 float sineValue;
 float error;
+float error_before = 0;
+float Ii_circle_p = 0;
 float output = 0;
+float output1 = 0;
 
 float GRID_FREQ = 50;
 extern float Vol1;
@@ -148,6 +152,11 @@ int main() {
         while (KEY_Read() == 1)
           ;
       }
+      if (KEY_Read() == 4) {
+        K_RLC = 0 - K_RLC;
+        while (KEY_Read() == 4)
+          ;
+      }
     }
 
     if (flag == 0) {
@@ -176,26 +185,26 @@ int main() {
       }
     }
 
-    if (flag == 2) {
-      EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-      EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-      if (sin(spll1.theta[0] + PI / 6.0) >= 0) {
-        EPwm7Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-        EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-        EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-      }
-      if (sin(spll1.theta[0] + PI / 6.0) < 0) {
-        EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;
-        EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-        EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET;
-        EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-        EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-      }
-    }
+    // if (flag == 2) {
+    //   EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+    //   EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+    //   if (sin(spll1.theta[0] + PI / 6.0) >= 0) {
+    //     EPwm7Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
+    //     EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+    //     EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
+    //     EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
+    //     EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+    //     EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
+    //   }
+    //   if (sin(spll1.theta[0] + PI / 6.0) < 0) {
+    //     EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;
+    //     EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+    //     EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
+    //     EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET;
+    //     EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
+    //     EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
+    //   }
+    // }
   }
 }
 
@@ -203,95 +212,97 @@ interrupt void TIM0_IRQn(void) {
   EALLOW;
 
   GpioDataRegs.GPATOGGLE.bit.GPIO0 = 1;
-  normalized_voltage = grid_voltage / 20;
+  normalized_voltage = grid_voltage / 35;
   spll1.u[0] = normalized_voltage;
   SPLL_1ph_SOGI_F_FUNC(&spll1);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll1);
 
-  // ref_current =
-  //     (power_factor * sin(spll1.theta[0] + PI / 6.0) +
-  //      sqrt(1 - power_factor * power_factor) * cos(spll1.theta[0] + PI / 6.0)
-  //      * 1) *
-  //     CURRENT_PEAK * 1.4142136;
-  ref_current = (power_factor * sin(spll1.theta[0] + PI * ratio)) *
-                CURRENT_PEAK * 1.4142136;
+  // ref_current = (power_factor * sin(spll1.theta[0])) *
+  //               CURRENT_PEAK * 1.4142136;
 
   if (flag == 1) {
-    // if (current_soft_start > 1)
-    //   current_soft_start = 1;
-    // current_soft_start += 0.00001;
-    // ref_current = (power_factor * sin(spll1.theta[0] + PI / 6.0) * 1) *
-    // CURRENT_PEAK *
+    // Soft Start: Set reference current increase gradually
+    current_soft_start += 0.0001;
+    if (current_soft_start > 1)
+      current_soft_start = 1;
+    if (power_factor > 1)
+      power_factor = 1;
+    if (power_factor < 0.5)
+      power_factor = 0.5;
+    ref_current =
+        (power_factor * sin(spll1.theta[0]) +
+         sqrt(1 - power_factor * power_factor) * cos(spll1.theta[0]) * 1) *
+        CURRENT_PEAK * 1.4142136;
+    // ref_current = (power_factor * sin(spll1.theta[0])) * CURRENT_PEAK *
     //               1.4142136 * current_soft_start;
-    // general_graph[general_index++] = ref_current;
-    // if (general_index >= GERERNAL_GRAPH_INDEX)
-    //   general_index = 0;
-
-    V_dc_feedback = rectifier_voltage;
-    if (V_dc_feedback < 1)
-      V_dc_feedback = 1;
   }
+
+  V_dc_feedback = rectifier_voltage;
+  if (V_dc_feedback < 1)
+    V_dc_feedback = 1;
+  // }
   V_in_feedback = spll1.osg_u[0];
 
   error = ref_current - grid_current;
-  general_graph[general_index++] = V_in_feedback;
+  general_graph[general_index++] = grid_voltage;
   if (general_index >= GERERNAL_GRAPH_INDEX)
     general_index = 0;
-  output = (error * Kp_set + V_in_feedback * 30) /
-           V_dc_feedback; // A sine wave, should between -1 and 1
-
-  // Test rectifier
-  // output = sin(spll1.theta[0]) * ratio;
+  Ii_circle_p = Kp_set * (error - error_before);
+  output1 += Ii_circle_p;
+  output = (output1 + V_in_feedback * 35) / V_dc_feedback;
+  error_before = error;
+  // output = (error * Kp_set + V_in_feedback * 35) /
+  //          V_dc_feedback; // A sine wave, should between -1 and 1
+  // output = error * Kp_set / rectifier_voltage;
 
   output_graph[output_index++] = output;
-  if (output_index > OUTPUT_GRAPH_INDEX)
+  if (output_index >= OUTPUT_GRAPH_INDEX)
     output_index = 0;
 
-  // output = sin(spll1.theta[0]) * 0.9;
+  // output = sin(spll1.theta[0]) * ratio;
 
   if (flag == 1) {
-    EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-    EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-    EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-    EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-    EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
-    EPwm8Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-    EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-    EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;
-    if (output > 1)
-      output = 1;
-    if (output < -1)
-      output = -1;
-    compare1 = (Uint16)(output * MAX_CMPA / 2.0 + 2250);
-    compare1 = (Uint16)(output * MAX_CMPA / 2.0 + 2250);
-    EPwm7Regs.CMPA.half.CMPA = (Uint16)compare1;
-    EPwm8Regs.CMPA.half.CMPA = (Uint16)compare1;
-
-
     // EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     // EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-    // // Set actions for rectifier
     // EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
     // EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
     // EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
-    // // Set actions for rectifier
     // EPwm8Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
     // EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;
     // EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;
-    // compare1 = (Uint16)(output * MAX_CMPA);
-    // compare2 = (Uint16)(-1 * output * MAX_CMPA);
+    // if (output > 1)
+    //   output = 1;
+    // if (output < -1)
+    //   output = -1;
+    // compare1 = (Uint16)(output * MAX_CMPA / 2.0 + 2250);
+    // compare1 = (Uint16)(output * MAX_CMPA / 2.0 + 2250);
     // EPwm7Regs.CMPA.half.CMPA = (Uint16)compare1;
-    // EPwm8Regs.CMPA.half.CMPA = (Uint16)compare2;
+    // EPwm8Regs.CMPA.half.CMPA = (Uint16)compare1;
+
+    EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+    EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+    // Set actions for rectifier
+    EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
+    EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
+    EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
+    // Set actions for rectifier
+    EPwm8Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
+    EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;
+    EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;
+    compare1 = (Uint16)(output * MAX_CMPA);
+    compare2 = (Uint16)(-1 * output * MAX_CMPA);
+    EPwm7Regs.CMPA.half.CMPA = (Uint16)compare1;
+    EPwm8Regs.CMPA.half.CMPA = (Uint16)compare2;
   }
 
   if (scope_mode == 0) {
     dutyCycle = (sin(spll1.theta[0]) + 1.0) / 2.0 * MAX_CMPA;
   }
-  
+
   if (scope_mode == 1) {
     // Check
-    dutyCycle = output * MAX_CMPA / 2 + 2250;
+    dutyCycle = output * MAX_CMPA / 2.5 + 2250;
   }
 
   EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
