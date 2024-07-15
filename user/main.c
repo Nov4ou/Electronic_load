@@ -33,11 +33,11 @@
 #define V_DC_REFERENCE 25
 
 Uint8 scope_mode;
-float CURRENT_PEAK = 1;
+float CURRENT_PEAK = 2;
 _Bool flag_rectifier = 0;
 _Bool flag_inverter = 0;
 Uint8 K_RLC = 1;
-float ratio = 0.9;
+float ratio = 1;
 
 #define GERERNAL_GRAPH_INDEX 150
 float general_graph[GERERNAL_GRAPH_INDEX];
@@ -52,7 +52,7 @@ Uint16 theta_index;
 Uint16 output_index;
 
 Uint16 compare1, compare2;
-float Kp_set = -8.0;
+float Kp_set = -12;
 float V_dc_feedback = 0;
 float V_in_feedback = 0;
 
@@ -163,9 +163,11 @@ int main() {
   SPLL_1ph_SOGI_F_init(GRID_FREQ, ((float)(1.0 / ISR_FREQUENCY)), &spll1);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll1);
+  // spll1.osg_coeff.osg_k = 1.0;
   SPLL_1ph_SOGI_F_init(GRID_FREQ, ((float)(1.0 / ISR_FREQUENCY)), &spll2);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll2);
+  // spll2.osg_coeff.osg_k = 1.414;
   spll1.lpf_coeff.B0_lf = (float32)((2 * Kp + Ki / ISR_FREQUENCY) / 2);
   spll1.lpf_coeff.B1_lf = (float32)(-(2 * Kp - Ki / ISR_FREQUENCY) / 2);
   spll2.lpf_coeff.B0_lf = (float32)((2 * Kp + Ki / ISR_FREQUENCY) / 2);
@@ -186,7 +188,8 @@ int main() {
   EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR;
   EPwm6Regs.AQCTLA.bit.CAD = AQ_SET;
 
-  PID_Init(&Inverter_current_loop, 0.05, 0.5, 0, 10, 0.5);
+  // PID_Init(&Inverter_current_loop, 0.05, 0.5, 0, 20, 0.5);
+  PID_Init(&Inverter_current_loop, 0.001, 0.001, 0, 5, 1);
   TIM0_Init(90, 50.5); // 10K
 
   while (1) {
@@ -258,25 +261,29 @@ interrupt void TIM0_IRQn(void) {
   EALLOW;
 
   GpioDataRegs.GPATOGGLE.bit.GPIO0 = 1;
-  normalized_voltage = grid_voltage / 35;
+  normalized_voltage = grid_voltage / 50;
   spll1.u[0] = normalized_voltage;
   SPLL_1ph_SOGI_F_FUNC(&spll1);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll1);
+  // spll1.osg_coeff.osg_k = 1.0;
 
   if (flag_rectifier == 1) {
     // Soft Start: Set reference current increase gradually
     current_soft_start += 0.0001;
-    if (current_soft_start > 1)
+    if (current_soft_start >= 1)
       current_soft_start = 1;
     if (power_factor > 1)
       power_factor = 1;
     if (power_factor < 0.5)
       power_factor = 0.5;
-    ref_current = (power_factor * sin(spll1.theta[0] + 0.1) +
-                   sqrt(1 - power_factor * power_factor) *
-                       cos(spll1.theta[0] + 0.1) * K_RLC) *
-                  CURRENT_PEAK * 1.4142136 * current_soft_start;
+    // ref_current = (power_factor * sin(spll1.theta[0] + 0.1) +
+    //                sqrt(1 - power_factor * power_factor) *
+    //                    cos(spll1.theta[0] + 0.1) * K_RLC) *
+    //               CURRENT_PEAK * 1.4142136 * current_soft_start;
+
+    ref_current = sin(spll1.theta[0] + 0.1) * CURRENT_PEAK * 1.4142136 *
+                  current_soft_start;
   }
 
   V_dc_feedback = rectifier_voltage;
@@ -291,9 +298,13 @@ interrupt void TIM0_IRQn(void) {
   SPLL_1ph_SOGI_F_FUNC(&spll2);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll2);
+  // spll2.osg_coeff.osg_k = 1.414;
   Ii_circle_p = Kp_set * (error - error_before);
   output1 += Ii_circle_p;
-  output = (output1 + spll2.osg_u[0] * 10 * -80 + V_in_feedback * 35) / V_dc_feedback;
+  // output = (output1 + spll2.osg_u[0] * 10 * -80 + V_in_feedback * 45 * ratio)
+  // /
+  //          V_dc_feedback;
+  output = (output1 + V_in_feedback * 50) / V_dc_feedback;
   error_before = error;
   // Position form
   // output = (error * Kp_set + V_in_feedback * 35) /
@@ -305,7 +316,7 @@ interrupt void TIM0_IRQn(void) {
   if (flag_inverter == 1) {
     // Soft Start: Set reference current increase gradually
     PID_Calc(&Inverter_current_loop, rectifier_voltage, V_DC_REFERENCE);
-    output2 = 0.5 + Inverter_current_loop.output;
+    output2 = 0 + Inverter_current_loop.output;
     if (output2 < 0)
       output2 = 0;
     if (output2 > 1)
@@ -320,6 +331,8 @@ interrupt void TIM0_IRQn(void) {
     /********************* Rectifier SPWM modulation ************************/
     EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+    EPwm7Regs.DBRED = deadband_78;
+    EPwm8Regs.DBRED = deadband_78;
     // Set actions for rectifier
     EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
     EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
