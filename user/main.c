@@ -34,7 +34,7 @@
 Uint8 scope_mode;
 float CURRENT_PEAK = 1;
 Uint8 flag = 0;
-Uint8 K_RLC = 1;
+Int8 K_RLC = 1;
 float ratio = 0;
 
 #define GERERNAL_GRAPH_INDEX 150
@@ -50,7 +50,7 @@ Uint16 theta_index;
 Uint16 output_index;
 
 Uint16 compare1, compare2;
-float Kp_set = -5.0;
+float Kp_set = -8.0;
 float V_dc_feedback = 0;
 float V_in_feedback = 0;
 
@@ -232,7 +232,7 @@ interrupt void TIM0_IRQn(void) {
       power_factor = 0.5;
     ref_current =
         (power_factor * sin(spll1.theta[0]) +
-         sqrt(1 - power_factor * power_factor) * cos(spll1.theta[0]) * 1) *
+         sqrt(1 - power_factor * power_factor) * cos(spll1.theta[0]) * K_RLC) *
         CURRENT_PEAK * 1.4142136;
     // ref_current = (power_factor * sin(spll1.theta[0])) * CURRENT_PEAK *
     //               1.4142136 * current_soft_start;
@@ -245,13 +245,13 @@ interrupt void TIM0_IRQn(void) {
   V_in_feedback = spll1.osg_u[0];
 
   error = ref_current - grid_current;
-  general_graph[general_index++] = grid_voltage;
-  if (general_index >= GERERNAL_GRAPH_INDEX)
-    general_index = 0;
+
   Ii_circle_p = Kp_set * (error - error_before);
   output1 += Ii_circle_p;
   output = (output1 + V_in_feedback * 35) / V_dc_feedback;
-  error_before = error;
+  error_before = error; 
+
+
   // output = (error * Kp_set + V_in_feedback * 35) /
   //          V_dc_feedback; // A sine wave, should between -1 and 1
   // output = error * Kp_set / rectifier_voltage;
