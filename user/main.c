@@ -30,6 +30,7 @@
 #define Ki 100.0
 #define GRID_VPP 25
 #define ISR_FREQUENCY 20000
+#define V_DC_REFERENCE 25
 
 Uint8 scope_mode;
 float CURRENT_PEAK = 1;
@@ -157,6 +158,20 @@ int main() {
         while (KEY_Read() == 4)
           ;
       }
+      if (KEY_Read() == 2) {
+        power_factor += 0.1;
+        if (power_factor >= 1)
+          power_factor = 1;
+        while (KEY_Read() == 2)
+          ;
+      }
+      if (KEY_Read() == 3) {
+        power_factor -= 0.1;
+        if (power_factor <= 0)
+          power_factor = 0;
+        while (KEY_Read() == 3)
+          ;
+      }
     }
 
     if (flag == 0) {
@@ -184,27 +199,6 @@ int main() {
         EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
       }
     }
-
-    // if (flag == 2) {
-    //   EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-    //   EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-    //   if (sin(spll1.theta[0] + PI / 6.0) >= 0) {
-    //     EPwm7Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-    //     EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-    //     EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-    //     EPwm8Regs.AQCTLA.bit.ZRO = AQ_CLEAR;
-    //     EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-    //     EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-    //   }
-    //   if (sin(spll1.theta[0] + PI / 6.0) < 0) {
-    //     EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;
-    //     EPwm7Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-    //     EPwm7Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-    //     EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET;
-    //     EPwm8Regs.AQCTLA.bit.CAU = AQ_NO_ACTION;
-    //     EPwm8Regs.AQCTLA.bit.CAD = AQ_NO_ACTION;
-    //   }
-    // }
   }
 }
 
@@ -217,9 +211,6 @@ interrupt void TIM0_IRQn(void) {
   SPLL_1ph_SOGI_F_FUNC(&spll1);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll1);
-
-  // ref_current = (power_factor * sin(spll1.theta[0])) *
-  //               CURRENT_PEAK * 1.4142136;
 
   if (flag == 1) {
     // Soft Start: Set reference current increase gradually
@@ -234,8 +225,6 @@ interrupt void TIM0_IRQn(void) {
         (power_factor * sin(spll1.theta[0]) +
          sqrt(1 - power_factor * power_factor) * cos(spll1.theta[0]) * K_RLC) *
         CURRENT_PEAK * 1.4142136;
-    // ref_current = (power_factor * sin(spll1.theta[0])) * CURRENT_PEAK *
-    //               1.4142136 * current_soft_start;
   }
 
   V_dc_feedback = rectifier_voltage;
@@ -244,41 +233,23 @@ interrupt void TIM0_IRQn(void) {
   // }
   V_in_feedback = spll1.osg_u[0];
 
+/***********************************************/
   error = ref_current - grid_current;
-
   Ii_circle_p = Kp_set * (error - error_before);
   output1 += Ii_circle_p;
   output = (output1 + V_in_feedback * 35) / V_dc_feedback;
-  error_before = error; 
-
+  error_before = error;
 
   // output = (error * Kp_set + V_in_feedback * 35) /
   //          V_dc_feedback; // A sine wave, should between -1 and 1
   // output = error * Kp_set / rectifier_voltage;
 
-  output_graph[output_index++] = output;
-  if (output_index >= OUTPUT_GRAPH_INDEX)
-    output_index = 0;
-
-  // output = sin(spll1.theta[0]) * ratio;
+  // output_graph[output_index++] = output;
+  // if (output_index >= OUTPUT_GRAPH_INDEX)
+  //   output_index = 0;
 
   if (flag == 1) {
-    // EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-    // EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-    // EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-    // EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-    // EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
-    // EPwm8Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-    // EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-    // EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;
-    // if (output > 1)
-    //   output = 1;
-    // if (output < -1)
-    //   output = -1;
-    // compare1 = (Uint16)(output * MAX_CMPA / 2.0 + 2250);
-    // compare1 = (Uint16)(output * MAX_CMPA / 2.0 + 2250);
-    // EPwm7Regs.CMPA.half.CMPA = (Uint16)compare1;
-    // EPwm8Regs.CMPA.half.CMPA = (Uint16)compare1;
+
 
     EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
