@@ -133,13 +133,19 @@ __interrupt void adc_isr(void) {
   Vol2 = Voltage2[ConversionCount] * 3.3 / 4095;
   Vol3 = Voltage3[ConversionCount] * 3.3 / 4095;
   Vol4 = Voltage4[ConversionCount] * 3.3 / 4095;
-  // filtered_current = kalman_filter(&filtered_vol3, Voltage4[ConversionCount]);
+  filtered_current = kalman_filter(&filtered_vol3,
+  Voltage4[ConversionCount]);
 
-  grid_inverter_current = (Voltage4[ConversionCount] * 0.0016 - 2.9282) * 2;
+  // 20m ohm
+  grid_inverter_current = (Voltage4[ConversionCount] * 0.0016 - 2.9939) * 2;
+
+  grid_current_graph[grid_curr_index++] = grid_inverter_current;
+  if (grid_curr_index > GRID_CURRENT_GRAPH)
+    grid_curr_index = 0;
 
   rectifier_voltage = (Vol1 - 1.502) * 41.61;
   rectifier_volt_graph[rectifier_volt_index++] = rectifier_voltage;
-  if (rectifier_volt_index > GRID_V_INDEX)
+  if (rectifier_volt_index >= GRID_V_INDEX)
     rectifier_volt_index = 0;
 
   grid_voltage = Voltage2[ConversionCount] * 0.0272 - 50.498;
@@ -149,10 +155,6 @@ __interrupt void adc_isr(void) {
 
   // 10m ohm
   grid_current = (Voltage3[ConversionCount] * 0.0016 - 2.9816) * 2;
-
-  grid_current_graph[grid_curr_index++] = grid_current;
-  if (grid_curr_index >= GRID_CURRENT_GRAPH)
-    grid_curr_index = 0;
 
   //
   // If 20 conversions have been logged, start over

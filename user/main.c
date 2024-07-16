@@ -28,16 +28,15 @@
 #define Kp 50.7089
 // #define Ki 1063.14
 #define Ki 5000.0
-#define GRID_VPP 25
 #define ISR_FREQUENCY 20000
-#define V_DC_REFERENCE 25
+#define V_DC_REFERENCE 50
 
-Uint8 scope_mode;
+Uint8 scope_mode = 1;
 float CURRENT_PEAK = 2;
 _Bool flag_rectifier = 0;
 _Bool flag_inverter = 0;
 Uint8 K_RLC = 1;
-float ratio = 1;
+float ratio = 0.27;
 
 #define GERERNAL_GRAPH_INDEX 150
 float general_graph[GERERNAL_GRAPH_INDEX];
@@ -190,10 +189,12 @@ int main() {
   EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR;
   EPwm6Regs.AQCTLA.bit.CAD = AQ_SET;
 
-  PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 5, 1);
+  // Only Voltage PI Loop
+  PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 10, 5);
 
-  // PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 8, 8);
-  // PID_Init(&Inverter_current_loop, 0.1, 0.001, 0, 2, 2);
+  // Dual PI Loop
+  // PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 5, 1);
+  // PID_Init(&Inverter_current_loop, 30, 0, 0, 30, 12.5);
   TIM0_Init(90, 50.5); // 10K
 
   while (1) {
@@ -318,26 +319,49 @@ interrupt void TIM0_IRQn(void) {
   /********************* Inverter Current Loop **************************/
 
   if (flag_inverter == 1) {
-    // PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
-    // output2 = 0 + Inverter_voltage_loop.output;
-    // if (output2 < 0)
-    //   output2 = 0;
-    // if (output2 > 5 * 1.4142136)
-    //   output2 = 5 * 1.4142136;
+    /************************ Dual PI Loop **************************/
+    PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
+    output2 = 0 + Inverter_voltage_loop.output;
+    if (output2 < 0)
+      output2 = 0;
+    if (output2 > 3 * 1.4142136)
+      output2 = 3 * 1.4142136;
     // PID_Calc(&Inverter_current_loop, output2 * sin(spll1.theta[0] + 0.1),
+    // grid_inverter_current);
+
+    // output3 =
+    //     15 * (output2 * sin(spll1.theta[0] + 0.1) - grid_inverter_current);
+
+    // output3 =
+    //     15 * (grid_inverter_current - output2 * sin(spll1.theta[0] + 0.1));
+
+    output3 =
+        5 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
+        V_in_feedback * 50 * ratio;
+
+    general_graph[general_index++] = output3;
+    if (general_index >= GERERNAL_GRAPH_INDEX)
+      general_index = 0;
+    // output3 = 0 + Inverter_current_loop.output;
+    // V_mod_inverter = (output3 + V_in_feedback * 50) / V_DC_REFERENCE;
+
+    V_mod_inverter = output3 / V_DC_REFERENCE;
+
     // grid_inverter_current); output3 = 0.5 + Inverter_current_loop.output;
     // V_mod_inverter = (output3 + V_in_feedback * 50) / V_dc_feedback; //
     // Modulation waveform
-
     // V_mod_inverter = (output3 + 0) / V_dc_feedback; // Modulation waveform
+    /************************ Dual PI Loop **************************/
 
-    PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
-    output3 = 0 + Inverter_voltage_loop.output;
-    if (output3 < 0)
-      output3 = 0;
-    if (output3 > 1)
-      output3 = 1;
-    V_mod_inverter = output3 * sin(spll1.theta[0] + 0.1);
+    /************************ Only Voltage PI Loop **************************/
+    // PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
+    // output3 = 0 + Inverter_voltage_loop.output;
+    // if (output3 < 0)
+    //   output3 = 0;
+    // if (output3 > 1)
+    //   output3 = 1;
+    // V_mod_inverter = output3 * sin(spll1.theta[0] + 0.1);
+    /************************ Only Voltage PI Loop **************************/
 
     // Open Loop Test
     // V_mod_inverter = sin(spll1.theta[0] + 0.1) * ratio;
@@ -394,7 +418,7 @@ interrupt void TIM0_IRQn(void) {
 
   if (scope_mode == 1) {
     // Check
-    dutyCycle = V_mod_inverter * MAX_CMPA / 2.5 + 2250;
+    dutyCycle = V_mod_inverter * MAX_CMPA / 2.0 + 2250;
   }
 
   EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
