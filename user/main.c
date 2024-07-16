@@ -69,7 +69,8 @@ float Ii_circle_p = 0;
 float output = 0;
 float output1 = 0;
 float output2 = 0.5;
-float V_mod2;
+float output3 = 0.5;
+float V_mod_inverter;
 
 float GRID_FREQ = 50;
 extern float Vol1;
@@ -86,6 +87,7 @@ float deadband_56 = 10;
 float deadband_78 = 10;
 
 extern float rectifier_voltage;
+extern float grid_inverter_current;
 
 SPLL_1ph_SOGI_F spll1;
 SPLL_1ph_SOGI_F spll2;
@@ -106,7 +108,7 @@ typedef struct {
   float integral, maxIntegral;
   float output, maxOutput;
 } PID;
-PID Inverter_current_loop;
+PID Inverter_voltage_loop, Inverter_current_loop;
 
 void PID_Init(PID *pid, float p, float i, float d, float maxI, float maxOut);
 void PID_Calc(PID *pid, float reference, float feedback);
@@ -188,8 +190,10 @@ int main() {
   EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR;
   EPwm6Regs.AQCTLA.bit.CAD = AQ_SET;
 
-  // PID_Init(&Inverter_current_loop, 0.05, 0.5, 0, 20, 0.5);
-  PID_Init(&Inverter_current_loop, 0.001, 0.001, 0, 5, 1);
+  PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 5, 1);
+
+  // PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 8, 8);
+  // PID_Init(&Inverter_current_loop, 0.1, 0.001, 0, 2, 2);
   TIM0_Init(90, 50.5); // 10K
 
   while (1) {
@@ -277,13 +281,13 @@ interrupt void TIM0_IRQn(void) {
       power_factor = 1;
     if (power_factor < 0.5)
       power_factor = 0.5;
-    // ref_current = (power_factor * sin(spll1.theta[0] + 0.1) +
-    //                sqrt(1 - power_factor * power_factor) *
-    //                    cos(spll1.theta[0] + 0.1) * K_RLC) *
-    //               CURRENT_PEAK * 1.4142136 * current_soft_start;
+    ref_current = (power_factor * sin(spll1.theta[0] + 0.1) +
+                   sqrt(1 - power_factor * power_factor) *
+                       cos(spll1.theta[0] + 0.1) * K_RLC) *
+                  CURRENT_PEAK * 1.4142136 * current_soft_start;
 
-    ref_current = sin(spll1.theta[0] + 0.1) * CURRENT_PEAK * 1.4142136 *
-                  current_soft_start;
+    // ref_current = sin(spll1.theta[0] + 0.1) * CURRENT_PEAK * 1.4142136 *
+    //               current_soft_start;
   }
 
   V_dc_feedback = rectifier_voltage;
@@ -314,15 +318,29 @@ interrupt void TIM0_IRQn(void) {
   /********************* Inverter Current Loop **************************/
 
   if (flag_inverter == 1) {
-    // Soft Start: Set reference current increase gradually
-    PID_Calc(&Inverter_current_loop, rectifier_voltage, V_DC_REFERENCE);
-    output2 = 0 + Inverter_current_loop.output;
-    if (output2 < 0)
-      output2 = 0;
-    if (output2 > 1)
-      output2 = 1;
-    V_mod2 = output2 * sin(spll1.theta[0] + 0.1); // Modulation waveform
-    // V_mod2 = sin(spll1.theta[0] + 0.1) * ratio;
+    // PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
+    // output2 = 0 + Inverter_voltage_loop.output;
+    // if (output2 < 0)
+    //   output2 = 0;
+    // if (output2 > 5 * 1.4142136)
+    //   output2 = 5 * 1.4142136;
+    // PID_Calc(&Inverter_current_loop, output2 * sin(spll1.theta[0] + 0.1),
+    // grid_inverter_current); output3 = 0.5 + Inverter_current_loop.output;
+    // V_mod_inverter = (output3 + V_in_feedback * 50) / V_dc_feedback; //
+    // Modulation waveform
+
+    // V_mod_inverter = (output3 + 0) / V_dc_feedback; // Modulation waveform
+
+    PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
+    output3 = 0 + Inverter_voltage_loop.output;
+    if (output3 < 0)
+      output3 = 0;
+    if (output3 > 1)
+      output3 = 1;
+    V_mod_inverter = output3 * sin(spll1.theta[0] + 0.1);
+
+    // Open Loop Test
+    // V_mod_inverter = sin(spll1.theta[0] + 0.1) * ratio;
   }
 
   /********************* Inverter Current Loop **************************/
@@ -345,9 +363,10 @@ interrupt void TIM0_IRQn(void) {
     compare2 = (Uint16)(-1 * output * MAX_CMPA);
     EPwm7Regs.CMPA.half.CMPA = compare1;
     EPwm8Regs.CMPA.half.CMPA = compare2;
-    /********************* Inverter SPWM modulation ************************/
+    /********************* Rectifier SPWM modulation ************************/
   }
   if (flag_inverter == 1) {
+    /********************* Inverter SPWM modulation ************************/
     EPwm5Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     EPwm6Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     EPwm5Regs.DBRED = deadband_56;
@@ -362,8 +381,8 @@ interrupt void TIM0_IRQn(void) {
     EPwm6Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
     EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR;
     EPwm6Regs.AQCTLA.bit.CAD = AQ_SET;
-    compare1 = (Uint16)(V_mod2 * (MAX_CMPA - 1));
-    compare2 = (Uint16)(-1 * V_mod2 * (MAX_CMPA - 1));
+    compare1 = (Uint16)(V_mod_inverter * (MAX_CMPA - 1));
+    compare2 = (Uint16)(-1 * V_mod_inverter * (MAX_CMPA - 1));
     EPwm5Regs.CMPA.half.CMPA = compare1;
     EPwm6Regs.CMPA.half.CMPA = compare2;
     /********************* Inverter SPWM modulation ************************/
@@ -375,7 +394,7 @@ interrupt void TIM0_IRQn(void) {
 
   if (scope_mode == 1) {
     // Check
-    dutyCycle = V_mod2 * MAX_CMPA / 2.5 + 2250;
+    dutyCycle = V_mod_inverter * MAX_CMPA / 2.5 + 2250;
   }
 
   EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
@@ -383,7 +402,7 @@ interrupt void TIM0_IRQn(void) {
   // Check SOGI
   // dutyCycle2 = (sin(spll1.theta[0] + 0.1 + PI * ratio) + 1.0) / 2.0 *
   // MAX_CMPA; dutyCycle2 = output * MAX_CMPA / 2 + 2500;
-  dutyCycle2 = V_in_feedback * MAX_CMPA / 2.0 + 2250;
+  dutyCycle2 = V_mod_inverter * MAX_CMPA / 2.0 + 2250;
   // dutyCycle2 = ref_current * MAX_CMPA / 2 + 2000;
   // dutyCycle2 = grid_voltage / 20 * MAX_CMPA;
   EPwm3Regs.CMPA.half.CMPA = (Uint16)dutyCycle2;

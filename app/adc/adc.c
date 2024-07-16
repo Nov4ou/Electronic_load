@@ -12,6 +12,7 @@ Uint16 ConversionCount;
 Uint16 Voltage1[10];
 Uint16 Voltage2[10];
 Uint16 Voltage3[10];
+Uint16 Voltage4[10];
 
 Uint8 index = 0;
 Uint16 grid_curr_index;
@@ -19,8 +20,10 @@ Uint16 grid_curr_index;
 float Vol1 = 0;
 float Vol2 = 0;
 float Vol3 = 0;
+float Vol4 = 0;
 extern float grid_voltage;
 extern float grid_current;
+float grid_inverter_current;
 float rectifier_voltage;
 float grid_vol_graph[GRID_V_INDEX];
 float rectifier_volt_graph[RECTIFIER_CURR_INDEX];
@@ -67,7 +70,9 @@ void ADC_Init() {
   AdcRegs.ADCSOC1CTL.bit.CHSEL =
       3; // set SOC1 channel select to ADCINA2     Grid Voltage
   AdcRegs.ADCSOC2CTL.bit.CHSEL =
-      0xA; // set SOC1 channel select to ADCINA2   Grid Current
+      0xA; // set SOC1 channel select to ADCINB2  Grid Current
+  AdcRegs.ADCSOC3CTL.bit.CHSEL =
+      0xC; // set SOC1 channel select to ADCINB4   Grid Output Current
   //
   // set SOC0 start trigger on EPWM1A, due to round-robin SOC0 converts
   // first then SOC1
@@ -85,6 +90,12 @@ void ADC_Init() {
   // first then SOC1
   //
   AdcRegs.ADCSOC2CTL.bit.TRIGSEL = 5;
+
+  //
+  // set SOC3 start trigger on EPWM1A, due to round-robin SOC0 converts
+  // first then SOC1
+  //
+  AdcRegs.ADCSOC3CTL.bit.TRIGSEL = 5;
 
   //
   // set SOC0 S/H Window to 7 ADC Clock Cycles, (6 ACQPS plus 1)
@@ -116,12 +127,15 @@ __interrupt void adc_isr(void) {
   Voltage1[ConversionCount] = AdcResult.ADCRESULT0;
   Voltage2[ConversionCount] = AdcResult.ADCRESULT1;
   Voltage3[ConversionCount] = AdcResult.ADCRESULT2;
+  Voltage4[ConversionCount] = AdcResult.ADCRESULT3;
 
   Vol1 = Voltage1[ConversionCount] * 3.3 / 4095;
   Vol2 = Voltage2[ConversionCount] * 3.3 / 4095;
   Vol3 = Voltage3[ConversionCount] * 3.3 / 4095;
-  // filtered_current = kalman_filter(&filtered_vol3,
-  // Voltage3[ConversionCount]);
+  Vol4 = Voltage4[ConversionCount] * 3.3 / 4095;
+  // filtered_current = kalman_filter(&filtered_vol3, Voltage4[ConversionCount]);
+
+  grid_inverter_current = (Voltage4[ConversionCount] * 0.0016 - 2.9282) * 2;
 
   rectifier_voltage = (Vol1 - 1.502) * 41.61;
   rectifier_volt_graph[rectifier_volt_index++] = rectifier_voltage;
@@ -133,10 +147,8 @@ __interrupt void adc_isr(void) {
   if (gridvindex > GRID_V_INDEX)
     gridvindex = 0;
 
+  // 10m ohm
   grid_current = (Voltage3[ConversionCount] * 0.0016 - 2.9816) * 2;
-  // grid_current = (Vol3 - 1.509) * 39.518 / 10;
-  // grid_current = (Vol3 - 1.509) * 39.518 / 20;
-  // filtered_current = kalman_filter(&filtered_vol3, Vol3);
 
   grid_current_graph[grid_curr_index++] = grid_current;
   if (grid_curr_index >= GRID_CURRENT_GRAPH)
