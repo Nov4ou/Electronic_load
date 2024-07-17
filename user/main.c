@@ -309,7 +309,8 @@ interrupt void TIM0_IRQn(void) {
   // output = (output1 + spll2.osg_u[0] * 10 * -80 + V_in_feedback * 45 * ratio)
   // /
   //          V_dc_feedback;
-  output = (output1 + V_in_feedback * 50) / V_dc_feedback;
+  // output = (output1 + V_in_feedback * 50) / V_dc_feedback;
+  output = (output1 + V_in_feedback * 50) / V_DC_REFERENCE;
   error_before = error;
   // Position form
   // output = (error * Kp_set + V_in_feedback * 35) /
