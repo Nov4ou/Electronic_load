@@ -15,27 +15,59 @@
 #include "epwm.h"
 #include "key.h"
 #include "math.h"
+#include "oled.h"
+#include "spi.h"
 #include "timer.h"
 
-// #pragma CODE_SECTION(TIM0_IRQn, "ramfuncs");
+#pragma CODE_SECTION(TIM0_IRQn, "ramfuncs");
+#pragma CODE_SECTION(PID_Calc, "ramfuncs");
 
-// extern Uint16 RamfuncsLoadStart;
-// extern Uint16 RamfuncsLoadEnd;
-// extern Uint16 RamfuncsRunStart;
-// extern Uint16 RamfuncsLoadSize;
+extern Uint16 RamfuncsLoadStart;
+extern Uint16 RamfuncsLoadEnd;
+extern Uint16 RamfuncsRunStart;
+extern Uint16 RamfuncsLoadSize;
 
 // #define Kp 22.7089
 #define Kp 50.7089
 // #define Ki 1063.14
 #define Ki 5000.0
-#define ISR_FREQUENCY 20000
+// #define ISR_FREQUENCY 20000
+#define ISR_FREQUENCY 10000
 #define V_DC_REFERENCE 50
+
+#define WINDOW_SIZE 5 // Size of the moving average window
+float buffer[WINDOW_SIZE];
+int index_buffer = 0;
+float filtered_output3;
+
+Uint8 str[10];
+Uint16 counter = 0;
+
+// Initialize the buffer
+void init_buffer() {
+  Uint8 i = 0;
+  for (i = 0; i < WINDOW_SIZE; i++) {
+    buffer[i] = 0;
+  }
+}
+
+// Add new data and calculate the moving average
+float moving_average(float new_value) {
+  Uint8 i = 0;
+  buffer[index_buffer] = new_value;
+  index_buffer = (index_buffer + 1) % WINDOW_SIZE;
+  float sum = 0;
+  for (i = 0; i < WINDOW_SIZE; i++) {
+    sum += buffer[i];
+  }
+  return sum / WINDOW_SIZE;
+}
 
 Uint8 scope_mode = 1;
 float CURRENT_PEAK = 2;
 _Bool flag_rectifier = 0;
 _Bool flag_inverter = 0;
-Uint8 K_RLC = 1;
+Int8 K_RLC = 1;
 float ratio = 0.27;
 
 #define GERERNAL_GRAPH_INDEX 150
@@ -64,11 +96,15 @@ float sineValue;
 float error;
 float error2;
 float error_before = 0;
+float error_before2 = 0;
 float Ii_circle_p = 0;
+float Ii_circle_p2 = 0;
 float output = 0;
 float output1 = 0;
-float output2 = 0.5;
-float output3 = 0.5;
+float output2 = 0;
+float output3 = 0;
+float output3_2 = 0;
+float last_output3 = 0;
 float V_mod_inverter;
 
 float GRID_FREQ = 50;
@@ -112,9 +148,12 @@ PID Inverter_voltage_loop, Inverter_current_loop;
 void PID_Init(PID *pid, float p, float i, float d, float maxI, float maxOut);
 void PID_Calc(PID *pid, float reference, float feedback);
 
+void OLED_Update();
+void ftoa(float f, int precision);
+
 int main() {
-  // memcpy(&RamfuncsRunStart, &RamfuncsLoadStart, (Uint32)&RamfuncsLoadSize);
-  // InitFlash();
+  memcpy(&RamfuncsRunStart, &RamfuncsLoadStart, (Uint32)&RamfuncsLoadSize);
+  InitFlash();
   InitSysCtrl();
   DINT;
   InitPieCtrl();
@@ -146,7 +185,15 @@ int main() {
   InitPWM6();
   InitPWM7();
   InitPWM8();
+
   KEY_Init();
+  SPIB_Init();
+  OLED_Init();
+  OLED_Clear();
+
+  // OLED_ShowString(0, 0, "Inverter: ", 16);
+
+  init_buffer();
   EALLOW;
   // Enable all the ePWM at the same time
   SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 1; // ePWM7
@@ -192,12 +239,17 @@ int main() {
   // Only Voltage PI Loop
   PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 10, 5);
 
+  PID_Init(&Inverter_current_loop, 0.0001, 0.001, 0, 25, 15);
+
   // Dual PI Loop
   // PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 5, 1);
   // PID_Init(&Inverter_current_loop, 30, 0, 0, 30, 12.5);
-  TIM0_Init(90, 50.5); // 10K
+
+  // TIM0_Init(90, 50.5); // 20K
+  TIM0_Init(90, 101); // 10K
 
   while (1) {
+    OLED_Update();
     if (KEY_Read() != 0) {
       if (KEY_Read() == 1) {
         flag_rectifier = 1 - flag_rectifier;
@@ -209,28 +261,24 @@ int main() {
         while (KEY_Read() == 2)
           ;
       }
-      if (KEY_Read() == 3) {
+      if (KEY_Read() == 4) {
         K_RLC = 0 - K_RLC;
         while (KEY_Read() == 4)
           ;
       }
-      if (KEY_Read() == 4) {
+      if (KEY_Read() == 5) {
         power_factor += 0.1;
         if (power_factor >= 1)
           power_factor = 1;
-        while (KEY_Read() == 2)
-          ;
-      }
-      if (KEY_Read() == 5) {
-        power_factor -= 0.1;
-        if (power_factor <= 0)
-          power_factor = 0;
-        while (KEY_Read() == 3)
+        while (KEY_Read() == 5)
           ;
       }
       if (KEY_Read() == 6) {
-        flag_rectifier = 1 - flag_rectifier;
-        flag_inverter = 1 - flag_inverter;
+        power_factor -= 0.1;
+        if (power_factor <= 0.5)
+          power_factor = 0.5;
+        while (KEY_Read() == 6)
+          ;
       }
     }
 
@@ -299,7 +347,7 @@ interrupt void TIM0_IRQn(void) {
   /********************* Rectifier Current Loop **************************/
   // Incremental form
   error = ref_current - grid_current;
-  spll2.u[0] = error / 10;
+  // spll2.u[0] = error / 10;
   SPLL_1ph_SOGI_F_FUNC(&spll2);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll2);
@@ -321,47 +369,39 @@ interrupt void TIM0_IRQn(void) {
 
   if (flag_inverter == 1) {
     /************************ Dual PI Loop **************************/
-    PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
-    output2 = 0 + Inverter_voltage_loop.output;
-    if (output2 < 0)
-      output2 = 0;
-    if (output2 > 3 * 1.4142136)
-      output2 = 3 * 1.4142136;
-    // PID_Calc(&Inverter_current_loop, output2 * sin(spll1.theta[0] + 0.1),
-    // grid_inverter_current);
+    // PID_Calc(&Inverter_current_loop, rectifier_voltage, V_DC_REFERENCE);
+    // output2 = 0 + Inverter_current_loop.output;
+    // if (output2 < 0)
+    //   output2 = 0;
+    // if (output2 > 8 * 1.4142136)
+    //   output2 = 8 * 1.4142136;
+    // // output3 =
+    // //     3 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1))
+    // +
+    // //     V_in_feedback * 50 * ratio;
+
+    // // error2 = grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1);
+    // // Ii_circle_p2 = 3 * (error2 - error_before2);
+    // // output3_2 += Ii_circle_p2;
+    // // output3 = output3_2 / V_DC_REFERENCE;
+
+    // // output3 =
+    // //     3 * (output2 * sin(spll1.theta[0] + 0.1) - grid_inverter_current);
 
     // output3 =
-    //     15 * (output2 * sin(spll1.theta[0] + 0.1) - grid_inverter_current);
-
-    // output3 =
-    //     15 * (grid_inverter_current - output2 * sin(spll1.theta[0] + 0.1));
-
-    output3 =
-        5 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
-        V_in_feedback * 50 * ratio;
-
-    general_graph[general_index++] = output3;
-    if (general_index >= GERERNAL_GRAPH_INDEX)
-      general_index = 0;
-    // output3 = 0 + Inverter_current_loop.output;
-    // V_mod_inverter = (output3 + V_in_feedback * 50) / V_DC_REFERENCE;
-
-    V_mod_inverter = output3 / V_DC_REFERENCE;
-
-    // grid_inverter_current); output3 = 0.5 + Inverter_current_loop.output;
-    // V_mod_inverter = (output3 + V_in_feedback * 50) / V_dc_feedback; //
-    // Modulation waveform
-    // V_mod_inverter = (output3 + 0) / V_dc_feedback; // Modulation waveform
+    //     5 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
+    //     V_in_feedback * 50 * ratio;
+    // V_mod_inverter = output3 / V_DC_REFERENCE; // Modulation waveforme
     /************************ Dual PI Loop **************************/
 
     /************************ Only Voltage PI Loop **************************/
-    // PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
-    // output3 = 0 + Inverter_voltage_loop.output;
-    // if (output3 < 0)
-    //   output3 = 0;
-    // if (output3 > 1)
-    //   output3 = 1;
-    // V_mod_inverter = output3 * sin(spll1.theta[0] + 0.1);
+    PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
+    output3 = 0 + Inverter_voltage_loop.output;
+    if (output3 < 0)
+      output3 = 0;
+    if (output3 > 1)
+      output3 = 1;
+    V_mod_inverter = output3 * sin(spll1.theta[0] + 0.1);
     /************************ Only Voltage PI Loop **************************/
 
     // Open Loop Test
@@ -425,9 +465,9 @@ interrupt void TIM0_IRQn(void) {
   EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;
 
   // Check SOGI
-  // dutyCycle2 = (sin(spll1.theta[0] + 0.1 + PI * ratio) + 1.0) / 2.0 *
-  // MAX_CMPA; dutyCycle2 = output * MAX_CMPA / 2 + 2500;
-  dutyCycle2 = V_mod_inverter * MAX_CMPA / 2.0 + 2250;
+  dutyCycle2 = sin(spll1.theta[0] + 0.1) / 2.0 * MAX_CMPA + MAX_CMPA / 2.0;
+  //  dutyCycle2 = output * MAX_CMPA / 2 + 2500;
+  // dutyCycle2 = V_mod_inverter * MAX_CMPA / 2.0 + 2250;
   // dutyCycle2 = ref_current * MAX_CMPA / 2 + 2000;
   // dutyCycle2 = grid_voltage / 20 * MAX_CMPA;
   EPwm3Regs.CMPA.half.CMPA = (Uint16)dutyCycle2;
@@ -463,4 +503,90 @@ void PID_Calc(PID *pid, float reference, float feedback) {
     pid->output = pid->maxOutput;
   else if (pid->output < -pid->maxOutput)
     pid->output = -pid->maxOutput;
+}
+
+void OLED_Update() {
+  counter++;
+  if (counter == 50000) {
+    OLED_ShowString(0, 0, "Inverter: ", 16);
+    if (flag_inverter == 1) {
+      OLED_ShowString(75, 0, "    1", 16);
+    } else {
+      OLED_ShowString(75, 0, "    0", 16);
+    }
+
+    OLED_ShowString(0, 2, "Rectifier: ", 16);
+    if (flag_rectifier == 1) {
+      OLED_ShowString(83, 2, "   1", 16);
+    } else {
+      OLED_ShowString(83, 2, "   0", 16);
+    }
+
+    OLED_ShowString(0, 4, "K_RLC: ", 8);
+    if (K_RLC == 1) {
+      OLED_ShowString(75, 4, "     1", 8);
+    } else {
+      OLED_ShowString(75, 4, "    -1", 8);
+    }
+
+    OLED_ShowString(0, 5, "Power factor: ", 8);
+    ftoa(power_factor, 1);
+    OLED_ShowString(95, 6, str, 4);
+
+    // OLED_ShowString(0, 2, "Eff:", 16);
+    // if (Vol1Loop == 1 && Vol2Loop == 1) {
+    //   ftoa(filteredEff * 100, 1);
+    //   OLED_ShowString(45, 2, str, 16);
+    // }
+
+    // OLED_ShowString(0, 4, "Loop: ", 16);
+    // if (Vol1Loop == 1 && Vol2Loop == 1)
+    //   OLED_ShowString(45, 4, "ON ", 16);
+    // else
+    //   OLED_ShowString(45, 4, "OFF", 16);
+
+    counter = 0;
+  }
+}
+
+// This function converts a float to a string with a specified precision.
+void ftoa(float f, int precision) {
+  int j;
+
+  // Split the float into integer and fractional parts
+  int int_part = (int)f;
+  float frac_part = f - int_part;
+
+  int i = 0;
+  // If the integer part is 0, add '0' to the string
+  if (int_part == 0) {
+    str[i++] = '0';
+  } else {
+    // Convert the integer part to string
+    while (int_part) {
+      str[i++] = int_part % 10 + '0';
+      int_part /= 10;
+    }
+  }
+
+  // Reverse the string to get the correct order
+  for (j = 0; j < i / 2; j++) {
+    char temp = str[j];
+    str[j] = str[i - j - 1];
+    str[i - j - 1] = temp;
+  }
+
+  // Add the decimal point
+  str[i++] = '.';
+
+  // Convert the fractional part to string with the specified precision
+  for (j = 0; j < precision; j++) {
+    frac_part *= 10;
+    int digit = (int)frac_part;
+    str[i++] = digit + '0';
+    frac_part -= digit;
+  }
+
+  // Terminate the string
+  str[i] = '\0';
 }

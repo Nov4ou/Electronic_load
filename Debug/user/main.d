@@ -69,6 +69,8 @@ user/main.obj: /Applications/ti/solar/v1.2/float/include/SPLL_3PH_SRF_F.h
 user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/adc/adc.h
 user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/epwm/epwm.h
 user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/key/key.h
+user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled/oled.h
+user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi/spi.h
 user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer/timer.h
 
 ../user/main.c:
@@ -208,6 +210,10 @@ user/main.obj: /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer/ti
 /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/epwm/epwm.h:
 
 /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/key/key.h:
+
+/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled/oled.h:
+
+/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi/spi.h:
 
 /Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer/timer.h:
 

@@ -92,6 +92,18 @@
                             </option>
                         </tool>
                     </fileInfo>
+                    <fileInfo id="com.ti.ccstudio.buildDefinitions.C2000.Debug.70254112.app/oled/oled.c" name="oled.c" rcbsApplicability="disable" resourcePath="app/oled/oled.c" toolsToInvoke="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.compilerDebug.757349324.845777325">
+                        <tool id="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.compilerDebug.757349324.845777325" name="C2000 Compiler" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.compilerDebug.757349324">
+                            <option id="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.INCLUDE_PATH.1059673044" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.INCLUDE_PATH" valueType="includePath">
+                                <listOptionValue value="${PROJECT_ROOT}"/>
+                                <listOptionValue value="/Users/nov4ou/workspace_v12/f2806x/headers/include"/>
+                                <listOptionValue value="/Users/nov4ou/workspace_v12/f2806x/common/include"/>
+                                <listOptionValue value="${CG_TOOL_ROOT}/include"/>
+                                <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi"/>
+                                <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled"/>
+                            </option>
+                        </tool>
+                    </fileInfo>
                     <fileInfo id="com.ti.ccstudio.buildDefinitions.C2000.Debug.70254112.user/main.c" name="main.c" rcbsApplicability="disable" resourcePath="user/main.c" toolsToInvoke="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.compilerDebug.757349324.526617823">
                         <tool id="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.compilerDebug.757349324.526617823" name="C2000 Compiler" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.exe.compilerDebug.757349324">
                             <option id="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.INCLUDE_PATH.423714096" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.INCLUDE_PATH" valueType="includePath">
@@ -104,6 +116,8 @@
                                 <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/adc"/>
                                 <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/key"/>
                                 <listOptionValue value="/Applications/ti/solar/v1.2/float/include"/>
+                                <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled"/>
+                                <listOptionValue value="/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi"/>
                             </option>
                         </tool>
                     </fileInfo>

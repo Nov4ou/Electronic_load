@@ -11,6 +11,8 @@ ORDERED_OBJS += \
 "./app/adc/adc.obj" \
 "./app/epwm/epwm.obj" \
 "./app/key/key.obj" \
+"./app/oled/oled.obj" \
+"./app/spi/spi.obj" \
 "./app/timer/timer.obj" \
 "./f2806x_libraries/F2806x_Adc.obj" \
 "./f2806x_libraries/F2806x_CodeStartBranch.obj" \
@@ -27,7 +29,7 @@ ORDERED_OBJS += \
 "./f2806x_libraries/F2806x_SysCtrl.obj" \
 "./f2806x_libraries/F2806x_usDelay.obj" \
 "./user/main.obj" \
-"../28069_RAM_lnk.cmd" \
+"../F28069.cmd" \
 "../f2806x_libraries/F2806x_Headers_nonBIOS.cmd" \
 $(GEN_CMDS__FLAG) \
 -llibc.a \
@@ -44,6 +46,8 @@ RMDIR := rm -rf
 -include app/adc/subdir_vars.mk
 -include app/epwm/subdir_vars.mk
 -include app/key/subdir_vars.mk
+-include app/oled/subdir_vars.mk
+-include app/spi/subdir_vars.mk
 -include app/timer/subdir_vars.mk
 -include f2806x_libraries/subdir_vars.mk
 -include user/subdir_vars.mk
@@ -51,6 +55,8 @@ RMDIR := rm -rf
 -include app/adc/subdir_rules.mk
 -include app/epwm/subdir_rules.mk
 -include app/key/subdir_rules.mk
+-include app/oled/subdir_rules.mk
+-include app/spi/subdir_rules.mk
 -include app/timer/subdir_rules.mk
 -include f2806x_libraries/subdir_rules.mk
 -include user/subdir_rules.mk
@@ -171,8 +177,8 @@ Electronic_load.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "app/adc/adc.obj" "app/epwm/epwm.obj" "app/key/key.obj" "app/timer/timer.obj" "f2806x_libraries/F2806x_Adc.obj" "f2806x_libraries/F2806x_CodeStartBranch.obj" "f2806x_libraries/F2806x_CpuTimers.obj" "f2806x_libraries/F2806x_DefaultIsr.obj" "f2806x_libraries/F2806x_EPwm.obj" "f2806x_libraries/F2806x_GlobalVariableDefs.obj" "f2806x_libraries/F2806x_Gpio.obj" "f2806x_libraries/F2806x_I2C.obj" "f2806x_libraries/F2806x_PieCtrl.obj" "f2806x_libraries/F2806x_PieVect.obj" "f2806x_libraries/F2806x_Sci.obj" "f2806x_libraries/F2806x_Spi.obj" "f2806x_libraries/F2806x_SysCtrl.obj" "f2806x_libraries/F2806x_usDelay.obj" "user/main.obj" 
-	-$(RM) "app/adc/adc.d" "app/epwm/epwm.d" "app/key/key.d" "app/timer/timer.d" "f2806x_libraries/F2806x_Adc.d" "f2806x_libraries/F2806x_CpuTimers.d" "f2806x_libraries/F2806x_DefaultIsr.d" "f2806x_libraries/F2806x_EPwm.d" "f2806x_libraries/F2806x_GlobalVariableDefs.d" "f2806x_libraries/F2806x_Gpio.d" "f2806x_libraries/F2806x_I2C.d" "f2806x_libraries/F2806x_PieCtrl.d" "f2806x_libraries/F2806x_PieVect.d" "f2806x_libraries/F2806x_Sci.d" "f2806x_libraries/F2806x_Spi.d" "f2806x_libraries/F2806x_SysCtrl.d" "user/main.d" 
+	-$(RM) "app/adc/adc.obj" "app/epwm/epwm.obj" "app/key/key.obj" "app/oled/oled.obj" "app/spi/spi.obj" "app/timer/timer.obj" "f2806x_libraries/F2806x_Adc.obj" "f2806x_libraries/F2806x_CodeStartBranch.obj" "f2806x_libraries/F2806x_CpuTimers.obj" "f2806x_libraries/F2806x_DefaultIsr.obj" "f2806x_libraries/F2806x_EPwm.obj" "f2806x_libraries/F2806x_GlobalVariableDefs.obj" "f2806x_libraries/F2806x_Gpio.obj" "f2806x_libraries/F2806x_I2C.obj" "f2806x_libraries/F2806x_PieCtrl.obj" "f2806x_libraries/F2806x_PieVect.obj" "f2806x_libraries/F2806x_Sci.obj" "f2806x_libraries/F2806x_Spi.obj" "f2806x_libraries/F2806x_SysCtrl.obj" "f2806x_libraries/F2806x_usDelay.obj" "user/main.obj" 
+	-$(RM) "app/adc/adc.d" "app/epwm/epwm.d" "app/key/key.d" "app/oled/oled.d" "app/spi/spi.d" "app/timer/timer.d" "f2806x_libraries/F2806x_Adc.d" "f2806x_libraries/F2806x_CpuTimers.d" "f2806x_libraries/F2806x_DefaultIsr.d" "f2806x_libraries/F2806x_EPwm.d" "f2806x_libraries/F2806x_GlobalVariableDefs.d" "f2806x_libraries/F2806x_Gpio.d" "f2806x_libraries/F2806x_I2C.d" "f2806x_libraries/F2806x_PieCtrl.d" "f2806x_libraries/F2806x_PieVect.d" "f2806x_libraries/F2806x_Sci.d" "f2806x_libraries/F2806x_Spi.d" "f2806x_libraries/F2806x_SysCtrl.d" "user/main.d" 
 	-$(RM) "f2806x_libraries/F2806x_CodeStartBranch.d" "f2806x_libraries/F2806x_usDelay.d" 
 	-@echo 'Finished clean'
 	-@echo ' '

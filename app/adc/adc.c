@@ -1,5 +1,6 @@
 #include "adc.h"
 #include "F2806x_Device.h"
+#include "F2806x_EPwm_defines.h"
 #include "epwm.h"
 
 #define GRID_V_INDEX 100
@@ -66,9 +67,9 @@ void ADC_Init() {
   AdcRegs.INTSEL1N2.bit.INT1SEL = 1;
 
   AdcRegs.ADCSOC0CTL.bit.CHSEL =
-      5; // set SOC0 channel select to ADCINA3     Bus Voltage
+      5; // set SOC0 channel select to ADCINA5     Bus Voltage
   AdcRegs.ADCSOC1CTL.bit.CHSEL =
-      3; // set SOC1 channel select to ADCINA2     Grid Voltage
+      3; // set SOC1 channel select to ADCINA3     Grid Voltage
   AdcRegs.ADCSOC2CTL.bit.CHSEL =
       0xA; // set SOC1 channel select to ADCINB2  Grid Current
   AdcRegs.ADCSOC3CTL.bit.CHSEL =
@@ -111,11 +112,12 @@ void ADC_Init() {
   //
   // Assumes ePWM1 clock is already enabled in InitSysCtrl();
   //
+  EPwm1Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN;
   EPwm1Regs.ETSEL.bit.SOCAEN = 1;    // Enable SOC on A group
   EPwm1Regs.ETSEL.bit.SOCASEL = 4;   // Select SOC from CMPA on upcount
   EPwm1Regs.ETPS.bit.SOCAPRD = 1;    // Generate pulse on 1st event
-  EPwm1Regs.CMPA.half.CMPA = 0x0080; // Set compare A value
-  EPwm1Regs.TBPRD = 0x5000;          // Set period for ePWM1
+  EPwm1Regs.CMPA.half.CMPA = 0; // Set compare A value
+  EPwm1Regs.TBPRD = MAX_CMPA;          // Set period for ePWM1
   // EPwm1Regs.TBPRD             = 4500;   // Set period for ePWM1
   EPwm1Regs.TBCTL.bit.CTRMODE = 0; // count up and start
 }

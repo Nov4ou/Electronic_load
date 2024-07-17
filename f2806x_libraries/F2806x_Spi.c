@@ -167,12 +167,12 @@ InitSpibGpio()
     // This will enable the pullups for the specified pins.
     // Comment out other unwanted lines.
 
-    GpioCtrlRegs.GPAPUD.bit.GPIO12 = 0;   // Enable pull-up on GPIO12 (SPISIMOB)
+//    GpioCtrlRegs.GPAPUD.bit.GPIO12 = 0;   // Enable pull-up on GPIO12 (SPISIMOB)
     GpioCtrlRegs.GPAPUD.bit.GPIO13 = 0;   // Enable pull-up on GPIO13 (SPISOMIB)
     GpioCtrlRegs.GPAPUD.bit.GPIO14 = 0;   // Enable pull-up on GPIO14 (SPICLKB)
-    GpioCtrlRegs.GPAPUD.bit.GPIO15 = 0;   // Enable pull-up on GPIO15 (SPISTEB)
+//    GpioCtrlRegs.GPAPUD.bit.GPIO15 = 0;   // Enable pull-up on GPIO15 (SPISTEB)
 
-    //GpioCtrlRegs.GPAPUD.bit.GPIO24 = 0; // Enable pull-up on GPIO24 (SPISIMOB)
+    GpioCtrlRegs.GPAPUD.bit.GPIO24 = 0; // Enable pull-up on GPIO24 (SPISIMOB)
     //GpioCtrlRegs.GPAPUD.bit.GPIO25 = 0; // Enable pull-up on GPIO25 (SPISOMIB)
     //GpioCtrlRegs.GPAPUD.bit.GPIO26 = 0; // Enable pull-up on GPIO26 (SPICLKB)
     //GpioCtrlRegs.GPAPUD.bit.GPIO27 = 0; // Enable pull-up on GPIO27 (SPISTEB)
@@ -182,12 +182,12 @@ InitSpibGpio()
     // This will select asynch (no qualification) for the selected pins.
     // Comment out other unwanted lines.
     //
-    GpioCtrlRegs.GPAQSEL1.bit.GPIO12 = 3; // Asynch input GPIO12 (SPISIMOB)
+//    GpioCtrlRegs.GPAQSEL1.bit.GPIO12 = 3; // Asynch input GPIO12 (SPISIMOB)
     GpioCtrlRegs.GPAQSEL1.bit.GPIO13 = 3; // Asynch input GPIO13 (SPISOMIB)
     GpioCtrlRegs.GPAQSEL1.bit.GPIO14 = 3; // Asynch input GPIO14 (SPICLKB)
-    GpioCtrlRegs.GPAQSEL1.bit.GPIO15 = 3; // Asynch input GPIO15 (SPISTEB)
+//    GpioCtrlRegs.GPAQSEL1.bit.GPIO15 = 3; // Asynch input GPIO15 (SPISTEB)
 
-    //GpioCtrlRegs.GPAQSEL2.bit.GPIO24 = 3; // Asynch input GPIO24 (SPISIMOB)
+    GpioCtrlRegs.GPAQSEL2.bit.GPIO24 = 3; // Asynch input GPIO24 (SPISIMOB)
     //GpioCtrlRegs.GPAQSEL2.bit.GPIO25 = 3; // Asynch input GPIO25 (SPISOMIB)
     //GpioCtrlRegs.GPAQSEL2.bit.GPIO26 = 3; // Asynch input GPIO26 (SPICLKB)
     //GpioCtrlRegs.GPAQSEL2.bit.GPIO27 = 3; // Asynch input GPIO27 (SPISTEB)
@@ -198,12 +198,12 @@ InitSpibGpio()
     // pins.
     // Comment out other unwanted lines.
     //
-    GpioCtrlRegs.GPAMUX1.bit.GPIO12 = 3; // Configure GPIO12 as SPISIMOB
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO12 = 3; // Configure GPIO12 as SPISIMOB
     GpioCtrlRegs.GPAMUX1.bit.GPIO13 = 3; // Configure GPIO13 as SPISOMIB
     GpioCtrlRegs.GPAMUX1.bit.GPIO14 = 3; // Configure GPIO14 as SPICLKB
-    GpioCtrlRegs.GPAMUX1.bit.GPIO15 = 3; // Configure GPIO15 as SPISTEB
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO15 = 3; // Configure GPIO15 as SPISTEB
 
-    //  GpioCtrlRegs.GPAMUX2.bit.GPIO24 = 3; // Configure GPIO24 as SPISIMOB
+      GpioCtrlRegs.GPAMUX2.bit.GPIO24 = 3; // Configure GPIO24 as SPISIMOB
     //  GpioCtrlRegs.GPAMUX2.bit.GPIO25 = 3; // Configure GPIO25 as SPISOMIB
     //  GpioCtrlRegs.GPAMUX2.bit.GPIO26 = 3; // Configure GPIO26 as SPICLKB
     //  GpioCtrlRegs.GPAMUX2.bit.GPIO27 = 3; // Configure GPIO27 as SPISTEB

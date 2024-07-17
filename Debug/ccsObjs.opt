@@ -1,6 +1,8 @@
 "./app/adc/adc.obj"
 "./app/epwm/epwm.obj"
 "./app/key/key.obj"
+"./app/oled/oled.obj"
+"./app/spi/spi.obj"
 "./app/timer/timer.obj"
 "./f2806x_libraries/F2806x_Adc.obj"
 "./f2806x_libraries/F2806x_CodeStartBranch.obj"
@@ -17,7 +19,7 @@
 "./f2806x_libraries/F2806x_SysCtrl.obj"
 "./f2806x_libraries/F2806x_usDelay.obj"
 "./user/main.obj"
-"../28069_RAM_lnk.cmd"
+"../F28069.cmd"
 "../f2806x_libraries/F2806x_Headers_nonBIOS.cmd"
 -llibc.a
 -l"/Applications/ti/solar/v1.2/float/lib/Solar_Lib_Float.lib"

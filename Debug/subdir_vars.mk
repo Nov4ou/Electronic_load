@@ -4,6 +4,6 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CMD_SRCS += \
-../28069_RAM_lnk.cmd 
+../F28069.cmd 
 
 

@@ -115,6 +115,8 @@ SUBDIRS := \
 app/adc \
 app/epwm \
 app/key \
+app/oled \
+app/spi \
 app/timer \
 f2806x_libraries \
 user \
