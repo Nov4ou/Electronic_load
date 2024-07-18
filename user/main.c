@@ -33,7 +33,7 @@ extern Uint16 RamfuncsLoadSize;
 #define Ki 5000.0
 // #define ISR_FREQUENCY 20000
 #define ISR_FREQUENCY 10000
-#define V_DC_REFERENCE 50
+#define V_DC_REFERENCE 49.82
 
 #define WINDOW_SIZE 5 // Size of the moving average window
 float buffer[WINDOW_SIZE];
@@ -64,7 +64,7 @@ float moving_average(float new_value) {
 }
 
 Uint8 scope_mode = 1;
-float CURRENT_PEAK = 2;
+float CURRENT_PEAK = 2.2;
 _Bool flag_rectifier = 0;
 _Bool flag_inverter = 0;
 Int8 K_RLC = 1;
@@ -179,8 +179,8 @@ int main() {
 
   ADC_Init();
   LED_Init();
-  InitPWM2();
-  InitPWM3();
+  // InitPWM2();
+  // InitPWM3();
   InitPWM5();
   InitPWM6();
   InitPWM7();
