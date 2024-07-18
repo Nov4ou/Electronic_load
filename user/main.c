@@ -64,7 +64,7 @@ float moving_average(float new_value) {
 }
 
 Uint8 scope_mode = 1;
-float CURRENT_PEAK = 2.2;
+float CURRENT_PEAK = 2.12;
 _Bool flag_rectifier = 0;
 _Bool flag_inverter = 0;
 Int8 K_RLC = 1;
