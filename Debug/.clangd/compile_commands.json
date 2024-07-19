@@ -16,6 +16,16 @@
    },
    {
       "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled/oled.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
+      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
+      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi/spi.c"
+   },
+   {
+      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
       "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
       "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer/timer.c"
    },
@@ -93,15 +103,5 @@
       "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
       "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/timer\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/epwm\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/adc\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/key\" -I\"/Applications/ti/solar/v1.2/float/include\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi\"",
       "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/user/main.c"
-   },
-   {
-      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
-      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi\" -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled\"",
-      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/oled/oled.c"
-   },
-   {
-      "directory" : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/Debug",
-      "command"   : "clang++ -I\"/Users/nov4ou/workspace_v12/Problems/Electronic_load\" -I\"/Users/nov4ou/workspace_v12/f2806x/headers/include\" -I\"/Users/nov4ou/workspace_v12/f2806x/common/include\" -I\"/Applications/ti/ccstheia140/ccs/tools/compiler/ti-cgt-c2000_22.6.1A23259/include\"",
-      "file"      : "/Users/nov4ou/workspace_v12/Problems/Electronic_load/app/spi/spi.c"
    }
 ]
