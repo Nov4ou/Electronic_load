@@ -126,7 +126,7 @@ void ADC_Init() {
   EPwm1Regs.ETSEL.bit.SOCASEL = 4;         // Select SOC from CMPA on upcount
   EPwm1Regs.ETPS.bit.SOCAPRD = 1;          // Generate pulse on 1st event
   EPwm1Regs.CMPA.half.CMPA = 0; // Set compare A value
-  EPwm1Regs.TBPRD = 4500;              // Set period for ePWM1
+  EPwm1Regs.TBPRD = MAX_CMPA;              // Set period for ePWM1
   // EPwm1Regs.CMPA.half.CMPA = 2250; // Set compare A value
   // EPwm1Regs.TBPRD = 4500;   // Set period for ePWM1
   EPwm1Regs.TBCTL.bit.CTRMODE = 0; // count up and start

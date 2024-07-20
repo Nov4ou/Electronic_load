@@ -63,7 +63,7 @@ float moving_average(float new_value) {
   return sum / WINDOW_SIZE;
 }
 
-Uint8 scope_mode = 1;
+Uint8 scope_mode = 0;
 float CURRENT_PEAK = 2;
 _Bool flag_rectifier = 0;
 _Bool flag_inverter = 0;
@@ -143,7 +143,7 @@ typedef struct {
   float integral, maxIntegral;
   float output, maxOutput;
 } PID;
-PID Inverter_voltage_loop, Inverter_current_loop;
+PID Inverter_voltage_loop, Inverter_current_loop, Inverter_grid_current_loop;
 
 void PID_Init(PID *pid, float p, float i, float d, float maxI, float maxOut);
 void PID_Calc(PID *pid, float reference, float feedback);
@@ -251,8 +251,8 @@ int main() {
 
   // Only Voltage PI Loop
   PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 10, 5);
-
-  PID_Init(&Inverter_current_loop, 0.0001, 0.001, 0, 25, 15);
+  PID_Init(&Inverter_current_loop, 0.01, 0.001, 0, 25, 15);
+  PID_Init(&Inverter_grid_current_loop, 7, 0.001, 0, 10, 100);
 
   // Dual PI Loop
   // PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 5, 1);
@@ -370,7 +370,7 @@ interrupt void TIM0_IRQn(void) {
   // output = (output1 + spll2.osg_u[0] * 10 * -80 + V_in_feedback * 45 * ratio)
   // /
   //          V_dc_feedback;
-  output = (output1 + V_in_feedback * 50) / V_dc_feedback;
+  output = (output1 + V_in_feedback * 50) / V_DC_REFERENCE;
 
   // output = (output1 + spll2.osg_u[0] * 20 * -80 + V_in_feedback * 50) /
   // V_DC_REFERENCE; output = (output1 + V_in_feedback * 50) / V_DC_REFERENCE;
@@ -393,21 +393,20 @@ interrupt void TIM0_IRQn(void) {
       output2 = 0;
     if (output2 > 5 * 1.4142136)
       output2 = 5 * 1.4142136;
+
     // output3 =
-    //     3 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
+    //     5 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
     //     V_in_feedback * 50 * ratio;
 
-    // error2 = grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1);
-    // Ii_circle_p2 = 3 * (error2 - error_before2);
-    // output3_2 += Ii_circle_p2;
-    // output3 = output3_2 / V_DC_REFERENCE;
-
     // output3 =
-    //     3 * (output2 * sin(spll1.theta[0] + 0.1) - grid_inverter_current);
+    //     9 * (output2 * sin(spll1.theta[0] + 0.1) - grid_inverter_current) +
+    //     V_in_feedback * 50 * 0.5;
 
-    output3 =
-        5 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
-        V_in_feedback * 50 * ratio;
+    output2 = output2 * sin(spll1.theta[0] + 0.1);
+    PID_Calc(&Inverter_grid_current_loop, output2, grid_inverter_current);
+    output3 = Inverter_grid_current_loop.output + V_in_feedback * 50;
+
+
     V_mod_inverter = output3 / V_DC_REFERENCE; // Modulation waveforme
     /************************ Dual PI Loop **************************/
 
