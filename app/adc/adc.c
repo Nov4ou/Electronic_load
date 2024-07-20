@@ -6,7 +6,7 @@
 #define GRID_V_INDEX 100
 #define RECTIFIER_CURR_INDEX 150
 
-#define GRID_CURRENT_GRAPH 150
+#define GRID_CURRENT_GRAPH 500
 
 Uint16 LoopCount;
 Uint16 ConversionCount;
@@ -112,13 +112,23 @@ void ADC_Init() {
   //
   // Assumes ePWM1 clock is already enabled in InitSysCtrl();
   //
+  // Setup Sync
+  EPwm1Regs.TBCTL.bit.SYNCOSEL =
+      TB_CTR_ZERO; // Send sync signal when counter is zero
+  // Allow each timer to be sync'ed
+  EPwm1Regs.TBCTL.bit.PHSEN =
+      TB_DISABLE; // Disable phase synchronization (Master)
+  EPwm1Regs.TBPHS.half.TBPHS = 0;
+  EPwm1Regs.TBCTR = 0x0000; // Clear counter
+
   EPwm1Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN;
-  EPwm1Regs.ETSEL.bit.SOCAEN = 1;    // Enable SOC on A group
-  EPwm1Regs.ETSEL.bit.SOCASEL = 4;   // Select SOC from CMPA on upcount
-  EPwm1Regs.ETPS.bit.SOCAPRD = 1;    // Generate pulse on 1st event
+  EPwm1Regs.ETSEL.bit.SOCAEN = 1;          // Enable SOC on A group
+  EPwm1Regs.ETSEL.bit.SOCASEL = 4;         // Select SOC from CMPA on upcount
+  EPwm1Regs.ETPS.bit.SOCAPRD = 1;          // Generate pulse on 1st event
   EPwm1Regs.CMPA.half.CMPA = 0; // Set compare A value
-  EPwm1Regs.TBPRD = MAX_CMPA;          // Set period for ePWM1
-  // EPwm1Regs.TBPRD             = 4500;   // Set period for ePWM1
+  EPwm1Regs.TBPRD = 4500;              // Set period for ePWM1
+  // EPwm1Regs.CMPA.half.CMPA = 2250; // Set compare A value
+  // EPwm1Regs.TBPRD = 4500;   // Set period for ePWM1
   EPwm1Regs.TBCTL.bit.CTRMODE = 0; // count up and start
 }
 
@@ -135,15 +145,12 @@ __interrupt void adc_isr(void) {
   Vol2 = Voltage2[ConversionCount] * 3.3 / 4095;
   Vol3 = Voltage3[ConversionCount] * 3.3 / 4095;
   Vol4 = Voltage4[ConversionCount] * 3.3 / 4095;
-  filtered_current = kalman_filter(&filtered_vol3,
-  Voltage4[ConversionCount]);
+  filtered_current = kalman_filter(&filtered_vol3, Voltage4[ConversionCount]);
 
   // 20m ohm
   grid_inverter_current = (Voltage4[ConversionCount] * 0.0016 - 2.9939) * 2;
 
-  grid_current_graph[grid_curr_index++] = grid_inverter_current;
-  if (grid_curr_index > GRID_CURRENT_GRAPH)
-    grid_curr_index = 0;
+
 
   rectifier_voltage = (Vol1 - 1.502) * 41.61;
   rectifier_volt_graph[rectifier_volt_index++] = rectifier_voltage;
@@ -157,7 +164,9 @@ __interrupt void adc_isr(void) {
 
   // 10m ohm
   grid_current = (Voltage3[ConversionCount] * 0.0016 - 2.9816) * 2;
-
+  grid_current_graph[grid_curr_index++] = grid_current;
+  if (grid_curr_index > GRID_CURRENT_GRAPH)
+    grid_curr_index = 0;
   //
   // If 20 conversions have been logged, start over
   //

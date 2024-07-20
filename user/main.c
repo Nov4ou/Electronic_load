@@ -33,7 +33,7 @@ extern Uint16 RamfuncsLoadSize;
 #define Ki 5000.0
 // #define ISR_FREQUENCY 20000
 #define ISR_FREQUENCY 10000
-#define V_DC_REFERENCE 49.82
+#define V_DC_REFERENCE 50
 
 #define WINDOW_SIZE 5 // Size of the moving average window
 float buffer[WINDOW_SIZE];
@@ -64,7 +64,7 @@ float moving_average(float new_value) {
 }
 
 Uint8 scope_mode = 1;
-float CURRENT_PEAK = 2.12;
+float CURRENT_PEAK = 2;
 _Bool flag_rectifier = 0;
 _Bool flag_inverter = 0;
 Int8 K_RLC = 1;
@@ -179,48 +179,14 @@ int main() {
 
   ADC_Init();
   LED_Init();
-  // InitPWM2();
-  // InitPWM3();
-  InitPWM5();
-  InitPWM6();
-  InitPWM7();
-  InitPWM8();
-
-  KEY_Init();
-  SPIB_Init();
-  OLED_Init();
-  OLED_Clear();
-
-  // OLED_ShowString(0, 0, "Inverter: ", 16);
-
-  init_buffer();
-  EALLOW;
-  // Enable all the ePWM at the same time
-  SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 1; // ePWM7
-  SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 1; // ePWM8
-  SysCtrlRegs.PCLKCR1.bit.EPWM5ENCLK = 1; // ePWM5
-  SysCtrlRegs.PCLKCR1.bit.EPWM6ENCLK = 1; // ePWM6
-  EDIS;
-
-  IER |= M_INT3;
-  PieCtrlRegs.PIEIER3.bit.INTx7 = 1;
-  // PieCtrlRegs.PIEIER3.bit.INTx8 = 1;
-  EINT; // Enable Global interrupt INTM
-  ERTM; // Enable Global realtime interrupt DBGM
-
-  SPLL_1ph_SOGI_F_init(GRID_FREQ, ((float)(1.0 / ISR_FREQUENCY)), &spll1);
-  SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
-                               (float)(2 * PI * GRID_FREQ), &spll1);
-  // spll1.osg_coeff.osg_k = 1.0;
-  SPLL_1ph_SOGI_F_init(GRID_FREQ, ((float)(1.0 / ISR_FREQUENCY)), &spll2);
-  SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
-                               (float)(2 * PI * GRID_FREQ), &spll2);
-  // spll2.osg_coeff.osg_k = 1.414;
-  spll1.lpf_coeff.B0_lf = (float32)((2 * Kp + Ki / ISR_FREQUENCY) / 2);
-  spll1.lpf_coeff.B1_lf = (float32)(-(2 * Kp - Ki / ISR_FREQUENCY) / 2);
-  spll2.lpf_coeff.B0_lf = (float32)((2 * Kp + Ki / ISR_FREQUENCY) / 2);
-  spll2.lpf_coeff.B1_lf = (float32)(-(2 * Kp - Ki / ISR_FREQUENCY) / 2);
-
+  // EPWM1_Init(MAX_CMPA);
+  EPWM2_Init(MAX_CMPA);
+  EPWM3_Init(MAX_CMPA);
+  EPWM5_Init(MAX_CMPA);
+  EPWM6_Init(MAX_CMPA);
+  EPWM7_Init(MAX_CMPA);
+  EPWM8_Init(MAX_CMPA);
+  EPwm1Regs.TBCTL.bit.SWFSYNC = 1; // Master
   EPwm5Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
   EPwm6Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
   EPwm5Regs.DBRED = deadband_56;
@@ -235,6 +201,53 @@ int main() {
   EPwm6Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
   EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR;
   EPwm6Regs.AQCTLA.bit.CAD = AQ_SET;
+
+  EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+  EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+  EPwm7Regs.DBRED = deadband_56;
+  EPwm7Regs.DBFED = deadband_56;
+  EPwm8Regs.DBRED = deadband_56;
+  EPwm8Regs.DBFED = deadband_56;
+  // Set actions for rectifier
+  EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
+  EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
+  EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
+  // Set actions for rectifier
+  EPwm8Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
+  EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;
+  EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;
+
+  KEY_Init();
+  SPIB_Init();
+  OLED_Init();
+  OLED_Clear();
+
+  // EALLOW;
+  // // Enable all the ePWM at the same time
+  // SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 1; // ePWM7
+  // SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 1; // ePWM8
+  // SysCtrlRegs.PCLKCR1.bit.EPWM5ENCLK = 1; // ePWM5
+  // SysCtrlRegs.PCLKCR1.bit.EPWM6ENCLK = 1; // ePWM6
+  // EDIS;
+
+  IER |= M_INT3;
+  PieCtrlRegs.PIEIER3.bit.INTx7 = 1;
+  // PieCtrlRegs.PIEIER3.bit.INTx8 = 1;
+  EINT; // Enable Global interrupt INTM
+  ERTM; // Enable Global realtime interrupt DBGM
+
+  SPLL_1ph_SOGI_F_init(GRID_FREQ, ((float)(1.0 / ISR_FREQUENCY)), &spll1);
+  SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
+                               (float)(2 * PI * GRID_FREQ), &spll1);
+  spll1.osg_coeff.osg_k = 1.0;
+  SPLL_1ph_SOGI_F_init(GRID_FREQ, ((float)(1.0 / ISR_FREQUENCY)), &spll2);
+  SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
+                               (float)(2 * PI * GRID_FREQ), &spll2);
+  spll2.osg_coeff.osg_k = 1.414;
+  spll1.lpf_coeff.B0_lf = (float32)((2 * Kp + Ki / ISR_FREQUENCY) / 2);
+  spll1.lpf_coeff.B1_lf = (float32)(-(2 * Kp - Ki / ISR_FREQUENCY) / 2);
+  spll2.lpf_coeff.B0_lf = (float32)((2 * Kp + Ki / ISR_FREQUENCY) / 2);
+  spll2.lpf_coeff.B1_lf = (float32)(-(2 * Kp - Ki / ISR_FREQUENCY) / 2);
 
   // Only Voltage PI Loop
   PID_Init(&Inverter_voltage_loop, 0.0001, 0.001, 0, 10, 5);
@@ -319,7 +332,7 @@ interrupt void TIM0_IRQn(void) {
   SPLL_1ph_SOGI_F_FUNC(&spll1);
   SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
                                (float)(2 * PI * GRID_FREQ), &spll1);
-  // spll1.osg_coeff.osg_k = 1.0;
+  spll1.osg_coeff.osg_k = 1.0;
 
   if (flag_rectifier == 1) {
     // Soft Start: Set reference current increase gradually
@@ -347,18 +360,23 @@ interrupt void TIM0_IRQn(void) {
   /********************* Rectifier Current Loop **************************/
   // Incremental form
   error = ref_current - grid_current;
-  // spll2.u[0] = error / 10;
-  SPLL_1ph_SOGI_F_FUNC(&spll2);
-  SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
-                               (float)(2 * PI * GRID_FREQ), &spll2);
+  // spll2.u[0] = error / 20;
+  // SPLL_1ph_SOGI_F_FUNC(&spll2);
+  // SPLL_1ph_SOGI_F_coeff_update(((float)(1.0 / ISR_FREQUENCY)),
+  //                              (float)(2 * PI * GRID_FREQ), &spll2);
   // spll2.osg_coeff.osg_k = 1.414;
   Ii_circle_p = Kp_set * (error - error_before);
   output1 += Ii_circle_p;
   // output = (output1 + spll2.osg_u[0] * 10 * -80 + V_in_feedback * 45 * ratio)
   // /
   //          V_dc_feedback;
-  // output = (output1 + V_in_feedback * 50) / V_dc_feedback;
-  output = (output1 + V_in_feedback * 50) / V_DC_REFERENCE;
+  output = (output1 + V_in_feedback * 50) / V_dc_feedback;
+
+  // output = (output1 + spll2.osg_u[0] * 20 * -80 + V_in_feedback * 50) /
+  // V_DC_REFERENCE; output = (output1 + V_in_feedback * 50) / V_DC_REFERENCE;
+
+  // output = 0.4 * sin(spll1.theta[0] + 0.1);
+
   error_before = error;
   // Position form
   // output = (error * Kp_set + V_in_feedback * 35) /
@@ -369,39 +387,38 @@ interrupt void TIM0_IRQn(void) {
 
   if (flag_inverter == 1) {
     /************************ Dual PI Loop **************************/
-    // PID_Calc(&Inverter_current_loop, rectifier_voltage, V_DC_REFERENCE);
-    // output2 = 0 + Inverter_current_loop.output;
-    // if (output2 < 0)
-    //   output2 = 0;
-    // if (output2 > 8 * 1.4142136)
-    //   output2 = 8 * 1.4142136;
-    // // output3 =
-    // //     3 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1))
-    // +
-    // //     V_in_feedback * 50 * ratio;
+    PID_Calc(&Inverter_current_loop, rectifier_voltage, V_DC_REFERENCE);
+    output2 = 0 + Inverter_current_loop.output;
+    if (output2 < 0)
+      output2 = 0;
+    if (output2 > 5 * 1.4142136)
+      output2 = 5 * 1.4142136;
+    // output3 =
+    //     3 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
+    //     V_in_feedback * 50 * ratio;
 
-    // // error2 = grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1);
-    // // Ii_circle_p2 = 3 * (error2 - error_before2);
-    // // output3_2 += Ii_circle_p2;
-    // // output3 = output3_2 / V_DC_REFERENCE;
-
-    // // output3 =
-    // //     3 * (output2 * sin(spll1.theta[0] + 0.1) - grid_inverter_current);
+    // error2 = grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1);
+    // Ii_circle_p2 = 3 * (error2 - error_before2);
+    // output3_2 += Ii_circle_p2;
+    // output3 = output3_2 / V_DC_REFERENCE;
 
     // output3 =
-    //     5 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
-    //     V_in_feedback * 50 * ratio;
-    // V_mod_inverter = output3 / V_DC_REFERENCE; // Modulation waveforme
+    //     3 * (output2 * sin(spll1.theta[0] + 0.1) - grid_inverter_current);
+
+    output3 =
+        5 * (grid_inverter_current + output2 * sin(spll1.theta[0] + 0.1)) +
+        V_in_feedback * 50 * ratio;
+    V_mod_inverter = output3 / V_DC_REFERENCE; // Modulation waveforme
     /************************ Dual PI Loop **************************/
 
     /************************ Only Voltage PI Loop **************************/
-    PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
-    output3 = 0 + Inverter_voltage_loop.output;
-    if (output3 < 0)
-      output3 = 0;
-    if (output3 > 1)
-      output3 = 1;
-    V_mod_inverter = output3 * sin(spll1.theta[0] + 0.1);
+    // PID_Calc(&Inverter_voltage_loop, rectifier_voltage, V_DC_REFERENCE);
+    // output3 = 0 + Inverter_voltage_loop.output;
+    // if (output3 < 0)
+    //   output3 = 0;
+    // if (output3 > 1)
+    //   output3 = 1;
+    // V_mod_inverter = output3 * sin(spll1.theta[0] + 0.1);
     /************************ Only Voltage PI Loop **************************/
 
     // Open Loop Test
@@ -415,7 +432,9 @@ interrupt void TIM0_IRQn(void) {
     EPwm7Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     EPwm8Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
     EPwm7Regs.DBRED = deadband_78;
+    EPwm7Regs.DBFED = deadband_78;
     EPwm8Regs.DBRED = deadband_78;
+    EPwm8Regs.DBFED = deadband_78;
     // Set actions for rectifier
     EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
     EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
@@ -446,20 +465,20 @@ interrupt void TIM0_IRQn(void) {
     EPwm6Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
     EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR;
     EPwm6Regs.AQCTLA.bit.CAD = AQ_SET;
-    compare1 = (Uint16)(V_mod_inverter * (MAX_CMPA - 1));
-    compare2 = (Uint16)(-1 * V_mod_inverter * (MAX_CMPA - 1));
+    compare1 = (Uint16)(V_mod_inverter * MAX_CMPA);
+    compare2 = (Uint16)(-1 * V_mod_inverter * MAX_CMPA);
     EPwm5Regs.CMPA.half.CMPA = compare1;
     EPwm6Regs.CMPA.half.CMPA = compare2;
     /********************* Inverter SPWM modulation ************************/
   }
 
   if (scope_mode == 0) {
-    dutyCycle = (sin(spll1.theta[0] + 0.1) + 1.0) / 2.0 * MAX_CMPA;
+    dutyCycle = V_mod_inverter * MAX_CMPA / 2.0 + MAX_CMPA / 2;
   }
 
   if (scope_mode == 1) {
     // Check
-    dutyCycle = V_mod_inverter * MAX_CMPA / 2.0 + 2250;
+    dutyCycle = output * MAX_CMPA / 2.0 + MAX_CMPA / 2;
   }
 
   EPwm2Regs.CMPA.half.CMPA = (Uint16)dutyCycle;

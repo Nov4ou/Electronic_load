@@ -14,7 +14,62 @@ Uint16 sineValue1 = 0, sineValue2 = 0;
 extern _Bool flag;
 float i_ref_rt;
 
-void InitPWM2() {
+void EPWM1_Init(Uint16 tbprd) {
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
+  SysCtrlRegs.PCLKCR1.bit.EPWM1ENCLK = 1; // ePWM1
+  EDIS;
+
+  InitEPwm1Gpio();
+
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 0; // Stop all TB clock;
+  EDIS;
+
+  // Setup Sync
+  EPwm1Regs.TBCTL.bit.SYNCOSEL = TB_CTR_ZERO; // Send sync signal when counter is zero
+  // Allow each timer to be sync'ed
+  EPwm1Regs.TBCTL.bit.PHSEN = TB_DISABLE;    // Disable phase synchronization (Master)
+  EPwm1Regs.TBPHS.half.TBPHS = 0;
+  EPwm1Regs.TBCTR = 0x0000; // Clear counter
+  EPwm1Regs.TBPRD = tbprd;
+  EPwm1Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
+  EPwm1Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
+  EPwm1Regs.TBCTL.bit.CLKDIV = TB_DIV1;
+
+  // Setup shadow register load on ZERO
+  EPwm1Regs.CMPCTL.bit.SHDWAMODE = CC_SHADOW;
+  EPwm1Regs.CMPCTL.bit.SHDWBMODE = CC_SHADOW;
+  EPwm1Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+  EPwm1Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+
+  // Set Compare values
+  EPwm1Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm1Regs.CMPB = tbprd / 2;           // Set Compare B value
+
+  // Set actions
+  EPwm1Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM1A on Zero
+  EPwm1Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
+  EPwm1Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
+  EPwm1Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+
+  // Active Low PWMs - Setup Deadband
+  EPwm1Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
+  EPwm1Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+  EPwm1Regs.DBCTL.bit.IN_MODE = DBA_ALL;
+  EPwm1Regs.DBRED = 10;
+  EPwm1Regs.DBFED = 10;
+
+  EPwm1Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO; // Select INT on Zero event
+  EPwm1Regs.ETSEL.bit.INTEN = 1;            // Enable INT
+  EPwm1Regs.ETPS.bit.INTPRD = ET_1ST;       // Generate INT on 1st event
+
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1; // Start all the timers synced
+  EDIS;
+}
+
+void EPWM2_Init(Uint16 tbprd) {
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
   SysCtrlRegs.PCLKCR1.bit.EPWM2ENCLK = 1; // ePWM2
@@ -27,12 +82,12 @@ void InitPWM2() {
   EDIS;
 
   // Setup Sync
-  EPwm2Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_DISABLE; // Pass through
+  EPwm2Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN; // Use sync input
   // Allow each timer to be sync'ed
-  EPwm2Regs.TBCTL.bit.PHSEN = TB_DISABLE;
+  EPwm2Regs.TBCTL.bit.PHSEN = TB_ENABLE;   // Enable phase synchronization
   EPwm2Regs.TBPHS.half.TBPHS = 0;
   EPwm2Regs.TBCTR = 0x0000; // Clear counter
-  EPwm2Regs.TBPRD = PWM_TBPRD;
+  EPwm2Regs.TBPRD = tbprd;
   EPwm2Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
   EPwm2Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
   EPwm2Regs.TBCTL.bit.CLKDIV = TB_DIV1;
@@ -44,21 +99,21 @@ void InitPWM2() {
   EPwm2Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
   // Set Compare values
-  EPwm2Regs.CMPA.half.CMPA = 0; // Set compare A value
-  EPwm2Regs.CMPB = 0;           // Set Compare B value
+  EPwm2Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm2Regs.CMPB = tbprd / 2;           // Set Compare B value
 
   // Set actions
-  EPwm2Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM1A on Zero
-  EPwm2Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
-  EPwm2Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  EPwm2Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+  EPwm2Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM2A on Zero
+  EPwm2Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM2A on event A, up count
+  EPwm2Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM2B on Zero
+  EPwm2Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM2B on event B, up count
 
   // Active Low PWMs - Setup Deadband
-  //    EPwm2Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
-  //    EPwm2Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-  //    EPwm2Regs.DBCTL.bit.IN_MODE = DBA_ALL;
-  //    EPwm2Regs.DBRED = 10;
-  //    EPwm2Regs.DBFED = 10;
+  EPwm2Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
+  EPwm2Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+  EPwm2Regs.DBCTL.bit.IN_MODE = DBA_ALL;
+  EPwm2Regs.DBRED = 10;
+  EPwm2Regs.DBFED = 10;
 
   EPwm2Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO; // Select INT on Zero event
   EPwm2Regs.ETSEL.bit.INTEN = 1;            // Enable INT
@@ -69,10 +124,10 @@ void InitPWM2() {
   EDIS;
 }
 
-void InitPWM3() {
+void EPWM3_Init(Uint16 tbprd) {
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
-  SysCtrlRegs.PCLKCR1.bit.EPWM3ENCLK = 1; // ePWM2
+  SysCtrlRegs.PCLKCR1.bit.EPWM3ENCLK = 1; // ePWM3
   EDIS;
 
   InitEPwm3Gpio();
@@ -82,12 +137,12 @@ void InitPWM3() {
   EDIS;
 
   // Setup Sync
-  EPwm3Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_DISABLE; // Pass through
-  // A3low each timer to be sync'ed
-  EPwm3Regs.TBCTL.bit.PHSEN = TB_DISABLE;
+  EPwm3Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN; // // Use sync input
+  // Allow each timer to be sync'ed
+  EPwm3Regs.TBCTL.bit.PHSEN = TB_ENABLE;
   EPwm3Regs.TBPHS.half.TBPHS = 0;
   EPwm3Regs.TBCTR = 0x0000; // Clear counter
-  EPwm3Regs.TBPRD = PWM_TBPRD;
+  EPwm3Regs.TBPRD = tbprd;
   EPwm3Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
   EPwm3Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
   EPwm3Regs.TBCTL.bit.CLKDIV = TB_DIV1;
@@ -99,21 +154,21 @@ void InitPWM3() {
   EPwm3Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
   // Set Compare values
-  EPwm3Regs.CMPA.half.CMPA = 0; // Set compare A value
-  EPwm3Regs.CMPB = 0;           // Set Compare B value
+  EPwm3Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm3Regs.CMPB = tbprd / 2;           // Set Compare B value
 
   // Set actions
-  EPwm3Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM1A on Zero
-  EPwm3Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
-  EPwm3Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  EPwm3Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
+  EPwm3Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM3A on Zero
+  EPwm3Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM3A on event A, up count
+  EPwm3Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM3B on Zero
+  EPwm3Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM3B on event B, up count
 
   // Active Low PWMs - Setup Deadband
-  //    EPwm2Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
-  //    EPwm2Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
-  //    EPwm2Regs.DBCTL.bit.IN_MODE = DBA_ALL;
-  //    EPwm2Regs.DBRED = 10;
-  //    EPwm2Regs.DBFED = 10;
+  EPwm3Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
+  EPwm3Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+  EPwm3Regs.DBCTL.bit.IN_MODE = DBA_ALL;
+  EPwm3Regs.DBRED = 10;
+  EPwm3Regs.DBFED = 10;
 
   EPwm3Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO; // Select INT on Zero event
   EPwm3Regs.ETSEL.bit.INTEN = 1;            // Enable INT
@@ -124,7 +179,62 @@ void InitPWM3() {
   EDIS;
 }
 
-void InitPWM5() {
+void EPWM4_Init(Uint16 tbprd) {
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
+  SysCtrlRegs.PCLKCR1.bit.EPWM4ENCLK = 1; // ePWM4
+  EDIS;
+
+  InitEPwm4Gpio();
+
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 0; // Stop all TB clock;
+  EDIS;
+
+  // Setup Sync
+  EPwm4Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN; // // Use sync input
+  // Allow each timer to be sync'ed
+  EPwm4Regs.TBCTL.bit.PHSEN = TB_ENABLE;
+  EPwm4Regs.TBPHS.half.TBPHS = 0;
+  EPwm4Regs.TBCTR = 0x0000; // Clear counter
+  EPwm4Regs.TBPRD = tbprd;
+  EPwm4Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
+  EPwm4Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
+  EPwm4Regs.TBCTL.bit.CLKDIV = TB_DIV1;
+
+  // Setup shadow register load on ZERO
+  EPwm4Regs.CMPCTL.bit.SHDWAMODE = CC_SHADOW;
+  EPwm4Regs.CMPCTL.bit.SHDWBMODE = CC_SHADOW;
+  EPwm4Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+  EPwm4Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+
+  // Set Compare values
+  EPwm4Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm4Regs.CMPB = tbprd / 2;           // Set Compare B value
+
+  // Set actions
+  EPwm4Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM4A on Zero
+  EPwm4Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM4A on event A, up count
+  EPwm4Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM4B on Zero
+  EPwm4Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM4B on event B, up count
+
+  // Active Low PWMs - Setup Deadband
+  EPwm4Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
+  EPwm4Regs.DBCTL.bit.POLSEL = DB_ACTV_HIC;
+  EPwm4Regs.DBCTL.bit.IN_MODE = DBA_ALL;
+  EPwm4Regs.DBRED = 10;
+  EPwm4Regs.DBFED = 10;
+
+  EPwm4Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO; // Select INT on Zero event
+  EPwm4Regs.ETSEL.bit.INTEN = 1;            // Enable INT
+  EPwm4Regs.ETPS.bit.INTPRD = ET_1ST;       // Generate INT on 1st event
+
+  EALLOW;
+  SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1; // Start all the timers synced
+  EDIS;
+}
+
+void EPWM5_Init(Uint16 tbprd) {
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
   SysCtrlRegs.PCLKCR1.bit.EPWM5ENCLK = 1; // ePWM5
@@ -137,13 +247,13 @@ void InitPWM5() {
   EDIS;
 
   // Setup Sync
-  EPwm5Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_DISABLE; // Pass through
+  EPwm5Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN; // // Use sync input
   // Allow each timer to be sync'ed
-  EPwm5Regs.TBCTL.bit.PHSEN = TB_DISABLE;
+  EPwm5Regs.TBCTL.bit.PHSEN = TB_ENABLE;
   EPwm5Regs.TBPHS.half.TBPHS = 0;
   EPwm5Regs.TBCTR = 0x0000; // Clear counter
-  EPwm5Regs.TBPRD = PWM_TBPRD;
-  EPwm5Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up and count down
+  EPwm5Regs.TBPRD = tbprd;
+  EPwm5Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up
   EPwm5Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
   EPwm5Regs.TBCTL.bit.CLKDIV = TB_DIV1;
 
@@ -154,20 +264,14 @@ void InitPWM5() {
   EPwm5Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
   // Set Compare values
-  EPwm5Regs.CMPA.half.CMPA = MAX_CMPA / 2; // Set compare A value
-  EPwm5Regs.CMPB = MAX_CMPA / 2;           // Set Compare B value
+  EPwm5Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm5Regs.CMPB = tbprd / 2;           // Set Compare B value
 
   // // Set actions
-  // // EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;            // Set PWM1A on Zero
-  // EPwm7Regs.AQCTLA.bit.CAU = AQ_SET;   // Clear PWM1A on event A, up count
-  // EPwm7Regs.AQCTLA.bit.CAD = AQ_CLEAR; // Clear PWM on down count
-  // // EPwm7Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  // // EPwm7Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
-
-  // Set actions for rectifier
-  EPwm5Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-  EPwm5Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-  EPwm5Regs.AQCTLA.bit.CAD = AQ_SET;
+  // EPwm5Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM5A on Zero
+  // EPwm5Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM5A on event A, up count
+  // EPwm5Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM5B on Zero
+  // EPwm5Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM5B on event B, up count
 
   // Active Low PWMs - Setup Deadband
   EPwm5Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
@@ -182,12 +286,10 @@ void InitPWM5() {
 
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1; // Start all the timers synced
-  SysCtrlRegs.PCLKCR1.bit.EPWM5ENCLK =
-      0; // Disable ePWM7 clock and start at the same time.
   EDIS;
 }
 
-void InitPWM6() {
+void EPWM6_Init(Uint16 tbprd) {
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
   SysCtrlRegs.PCLKCR1.bit.EPWM6ENCLK = 1; // ePWM6
@@ -200,13 +302,13 @@ void InitPWM6() {
   EDIS;
 
   // Setup Sync
-  EPwm6Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_DISABLE; // Pass through
+  EPwm6Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN; // // Use sync input
   // Allow each timer to be sync'ed
-  EPwm6Regs.TBCTL.bit.PHSEN = TB_DISABLE;
+  EPwm6Regs.TBCTL.bit.PHSEN = TB_ENABLE;
   EPwm6Regs.TBPHS.half.TBPHS = 0;
   EPwm6Regs.TBCTR = 0x0000; // Clear counter
-  EPwm6Regs.TBPRD = PWM_TBPRD;
-  EPwm6Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up and count down
+  EPwm6Regs.TBPRD = tbprd;
+  EPwm6Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up
   EPwm6Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
   EPwm6Regs.TBCTL.bit.CLKDIV = TB_DIV1;
 
@@ -217,20 +319,14 @@ void InitPWM6() {
   EPwm6Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
   // Set Compare values
-  EPwm6Regs.CMPA.half.CMPA = MAX_CMPA / 2; // Set compare A value
-  EPwm6Regs.CMPB = MAX_CMPA / 2;           // Set Compare B value
+  EPwm6Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm6Regs.CMPB = tbprd / 2;           // Set Compare B value
 
-  // // Set actions
-  // // EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;            // Set PWM1A on Zero
-  // EPwm7Regs.AQCTLA.bit.CAU = AQ_SET;   // Clear PWM1A on event A, up count
-  // EPwm7Regs.AQCTLA.bit.CAD = AQ_CLEAR; // Clear PWM on down count
-  // // EPwm7Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  // // EPwm7Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
-
-  // Set actions for rectifier
-  EPwm6Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-  EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-  EPwm6Regs.AQCTLA.bit.CAD = AQ_SET;
+  // Set actions
+  EPwm6Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM6A on Zero
+  EPwm6Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM6A on event A, up count
+  EPwm6Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM6B on Zero
+  EPwm6Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM6B on event B, up count
 
   // Active Low PWMs - Setup Deadband
   EPwm6Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
@@ -245,12 +341,10 @@ void InitPWM6() {
 
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1; // Start all the timers synced
-  SysCtrlRegs.PCLKCR1.bit.EPWM6ENCLK =
-      0; // Disable ePWM7 clock and start at the same time.
   EDIS;
 }
 
-void InitPWM7() {
+void EPWM7_Init(Uint16 tbprd) {
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
   SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK = 1; // ePWM7
@@ -263,13 +357,13 @@ void InitPWM7() {
   EDIS;
 
   // Setup Sync
-  EPwm7Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_DISABLE; // Pass through
+  EPwm7Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN; // // Use sync input
   // Allow each timer to be sync'ed
-  EPwm7Regs.TBCTL.bit.PHSEN = TB_DISABLE;
+  EPwm7Regs.TBCTL.bit.PHSEN = TB_ENABLE;
   EPwm7Regs.TBPHS.half.TBPHS = 0;
   EPwm7Regs.TBCTR = 0x0000; // Clear counter
-  EPwm7Regs.TBPRD = PWM_TBPRD;
-  EPwm7Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up and count down
+  EPwm7Regs.TBPRD = tbprd;
+  EPwm7Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up
   EPwm7Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
   EPwm7Regs.TBCTL.bit.CLKDIV = TB_DIV1;
 
@@ -280,20 +374,14 @@ void InitPWM7() {
   EPwm7Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
   // Set Compare values
-  EPwm7Regs.CMPA.half.CMPA = MAX_CMPA / 2; // Set compare A value
-  EPwm7Regs.CMPB = MAX_CMPA / 2;           // Set Compare B value
+  EPwm7Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm7Regs.CMPB = tbprd / 2;           // Set Compare B value
 
-  // // Set actions
-  // // EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;            // Set PWM1A on Zero
-  // EPwm7Regs.AQCTLA.bit.CAU = AQ_SET;   // Clear PWM1A on event A, up count
-  // EPwm7Regs.AQCTLA.bit.CAD = AQ_CLEAR; // Clear PWM on down count
-  // // EPwm7Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  // // EPwm7Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
-
-  // Set actions for rectifier
-  EPwm7Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-  EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-  EPwm7Regs.AQCTLA.bit.CAD = AQ_SET;
+  // Set actions
+  EPwm7Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM7A on Zero
+  EPwm7Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM7A on event A, up count
+  EPwm7Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM7B on Zero
+  EPwm7Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM7B on event B, up count
 
   // Active Low PWMs - Setup Deadband
   EPwm7Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
@@ -308,12 +396,10 @@ void InitPWM7() {
 
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1; // Start all the timers synced
-  SysCtrlRegs.PCLKCR1.bit.EPWM7ENCLK =
-      0; // Disable ePWM7 clock and start at the same time.
   EDIS;
 }
 
-void InitPWM8() {
+void EPWM8_Init(Uint16 tbprd) {
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;  // Disable TBCLK within the ePWM
   SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK = 1; // ePWM8
@@ -326,14 +412,13 @@ void InitPWM8() {
   EDIS;
 
   // Setup Sync
-  EPwm8Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_DISABLE; // Pass through
+  EPwm8Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN; // Use sync input
   // Allow each timer to be sync'ed
-  EPwm8Regs.TBCTL.bit.PHSEN = TB_DISABLE;
+  EPwm8Regs.TBCTL.bit.PHSEN = TB_ENABLE;
   EPwm8Regs.TBPHS.half.TBPHS = 0;
   EPwm8Regs.TBCTR = 0x0000; // Clear counter
-  EPwm8Regs.TBPRD = PWM_TBPRD;
-  // EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up and count down
-  EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up and count down
+  EPwm8Regs.TBPRD = tbprd;
+  EPwm8Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up
   EPwm8Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;
   EPwm8Regs.TBCTL.bit.CLKDIV = TB_DIV1;
 
@@ -344,19 +429,14 @@ void InitPWM8() {
   EPwm8Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
   // Set Compare values
-  EPwm8Regs.CMPA.half.CMPA = MAX_CMPA / 2; // Set compare A value
-  EPwm8Regs.CMPB = MAX_CMPA / 2;           // Set Compare B value
+  EPwm8Regs.CMPA.half.CMPA = tbprd / 2; // Set compare A value
+  EPwm8Regs.CMPB = tbprd / 2;           // Set Compare B value
 
-  // // Set actions
-  // EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM1A on Zero
-  // EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM1A on event A, up count
-  // EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM1B on Zero
-  // EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM1B on event B, up count
-
-  // Set actions for rectifier
-  EPwm8Regs.AQCTLA.bit.ZRO = AQ_NO_ACTION;
-  EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR;
-  EPwm8Regs.AQCTLA.bit.CAD = AQ_SET;
+  // Set actions
+  EPwm8Regs.AQCTLA.bit.ZRO = AQ_SET;   // Set PWM8A on Zero
+  EPwm8Regs.AQCTLA.bit.CAU = AQ_CLEAR; // Clear PWM8A on event A, up count
+  EPwm8Regs.AQCTLB.bit.ZRO = AQ_SET;   // Set PWM8B on Zero
+  EPwm8Regs.AQCTLB.bit.CBU = AQ_CLEAR; // Clear PWM8B on event B, up count
 
   // Active Low PWMs - Setup Deadband
   EPwm8Regs.DBCTL.bit.OUT_MODE = DB_FULL_ENABLE;
@@ -371,11 +451,8 @@ void InitPWM8() {
 
   EALLOW;
   SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1; // Start all the timers synced
-  SysCtrlRegs.PCLKCR1.bit.EPWM8ENCLK =
-      0; // Disable ePWM8 clock and start at the same time.
   EDIS;
 }
-
 __interrupt void epwm7_timer_isr(void) {
 
   // static Uint16 index = 0;
